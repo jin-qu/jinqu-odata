@@ -68,8 +68,8 @@ export class ODataQuery<T> implements IODataQuery<T> {
 export interface IODataQuery<T> extends IQueryBase {
     inlineCount(value?: boolean): IODataQuery<T>;
     where(predicate: Predicate<T>, ...scopes): IODataQuery<T>;
-    orderBy(keySelector: Func1<T>, ...scopes): IODataQuery<T>;
-    orderByDescending(keySelector: Func1<T>, ...scopes): IODataQuery<T>;
+    orderBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
+    orderByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
     select<TResult = any>(selector: Func1<T, TResult>, ...scopes): IODataQuery<T>;
     expand<TNav>(navigationSelector: Func2<T, TNav>, selector?: Func2<TNav, any>, ...scopes): IODataQuery<T>;
     skip(count: number): IODataQuery<T>;

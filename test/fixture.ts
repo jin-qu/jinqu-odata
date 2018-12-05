@@ -38,6 +38,6 @@ export class CompanyService extends ODataService {
     }
 
     companies() {
-        return this.createQuery<Company>('Companies').expand(c => c.addresses.$expand(a => a.city).country);
+        return this.createQuery<Company>('Companies');
     }
 }

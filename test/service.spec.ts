@@ -28,6 +28,6 @@ describe('Service tests', () => {
 
         const prm = provider.options.params[0];
         expect(prm).property('key').to.equal('$orderby');
-        expect(prm).property('value').to.equal('id, name desc');
+        expect(prm).property('value').to.equal('id,name desc');
     });
 });

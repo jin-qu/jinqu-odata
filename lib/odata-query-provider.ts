@@ -50,8 +50,8 @@ export class ODataQueryProvider implements IQueryProvider {
             else if (~thenFuncs.indexOf(part.type)) {
                 orders.push(part);
             }
-            else if (!~otherFuncs.indexOf(part.type)) {
-                params[part.type] = part;
+            else if (~otherFuncs.indexOf(part.type)) {
+                params[part.type] = part.args[0];
             }
             else throw new Error(`${part.type} is not supported.`);
         }
