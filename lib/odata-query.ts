@@ -24,20 +24,20 @@ export class ODataQuery<T> implements IODataQuery<T> {
         return this.create(QueryPart.where(predicate, scopes));
     }
 
-    orderBy(keySelector: Func1<T>, ...scopes): IODataQuery<T> {
-        return this.create(QueryPart.orderBy(keySelector, scopes));
+    orderBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T> {
+        return <any>this.create(QueryPart.orderBy(keySelector, scopes));
     }
 
-    orderByDescending(keySelector: Func1<T>, ...scopes): IODataQuery<T> {
-        return this.create(QueryPart.orderByDescending(keySelector, scopes));
+    orderByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T> {
+        return <any>this.create(QueryPart.orderByDescending(keySelector, scopes));
     }
 
-    thenBy(keySelector: Func1<T>, ...scopes): IODataQuery<T> {
-        return this.create(QueryPart.thenBy(keySelector, scopes));
+    thenBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T> {
+        return <any>this.create(QueryPart.thenBy(keySelector, scopes));
     }
 
-    thenByDescending(keySelector: Func1<T>, ...scopes): IODataQuery<T> {
-        return this.create(QueryPart.thenByDescending(keySelector, scopes));
+    thenByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T> {
+        return <any>this.create(QueryPart.thenByDescending(keySelector, scopes));
     }
 
     select<TResult = any>(selector: Func1<T, TResult>, ...scopes): IODataQuery<T> {
@@ -77,6 +77,11 @@ export interface IODataQuery<T> extends IQueryBase {
     toArrayAsync(): PromiseLike<T[] & InlineCountInfo>;
 }
 
+export interface IOrderedODataQuery<T> extends IODataQuery<T> {
+    thenBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
+    thenByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
+}
+
 export function createExpandPart<T, TNav>(navigationSelector: Func2<T, TNav>, selector: Func2<TNav, any>, scopes: any[]) {
     const args = [PartArgument.identifier(navigationSelector, scopes)];
     if (selector) {
@@ -88,3 +93,13 @@ export function createExpandPart<T, TNav>(navigationSelector: Func2<T, TNav>, se
 export const ODataFuncs = {
     expand: 'expand'
 };
+
+declare global {
+    interface Array<T> {
+        $expand<TNav>(navigationSelector: Func1<T, TNav>, selector?: Func1<TNav, any>): TNav;
+    }
+}
+
+Array.prototype.$expand = function() {
+    return this[0];
+}

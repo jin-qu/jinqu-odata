@@ -5,11 +5,12 @@ import {
     BinaryExpression, MemberExpression, IndexerExpression, FuncExpression,
     CallExpression, TernaryExpression
 } from 'jokenizer';
-import { IQueryPart, IRequestProvider, QueryFunc, AjaxFuncs, AjaxOptions, IQueryProvider, QueryParameter } from "jinqu";
+import { IQueryPart, IRequestProvider, QueryFunc, AjaxFuncs, AjaxOptions, IQueryProvider, QueryParameter, IPartArgument } from "jinqu";
 import { ODataQuery, ODataFuncs } from './odata-query';
 
 const orderFuncs = [QueryFunc.orderBy, QueryFunc.orderByDescending];
 const thenFuncs = [QueryFunc.thenBy, QueryFunc.thenByDescending];
+const descFuncs = [QueryFunc.orderByDescending, QueryFunc.thenByDescending];
 const otherFuncs = [QueryFunc.inlineCount, QueryFunc.where, QueryFunc.select, QueryFunc.skip, QueryFunc.take];
 const mathFuncs = ['round', 'floor', 'ceiling'];
 
@@ -29,10 +30,9 @@ export class ODataQueryProvider implements IQueryProvider {
     }
 
     executeAsync<T = any, TResult = T[]>(parts: IQueryPart[]): PromiseLike<TResult> {
-        const options: AjaxOptions[] = [];
-        const params: IQueryPart[] = [];
-        const queryParams: QueryParameter[] = [];
-
+        const options: AjaxOptions[] = [],
+            params = {},
+            queryParams: QueryParameter[] = [];
         let orders: IQueryPart[] = [],
             expands: IQueryPart[] = [];
 
@@ -41,29 +41,63 @@ export class ODataQueryProvider implements IQueryProvider {
                 options.push(part.args[0].literal);
             }
             else if (part.type === QueryFunc.toArray || part.type === QueryFunc.first) continue;
+            else if (part.type === ODataFuncs.expand) {
+                expands.push(part);
+            }
             else if (~orderFuncs.indexOf(part.type)) {
                 orders = [part];
             }
             else if (~thenFuncs.indexOf(part.type)) {
                 orders.push(part);
             }
-            else if (part.type === ODataFuncs.expand) {
-                expands.push(part);
+            else if (!~otherFuncs.indexOf(part.type)) {
+                params[part.type] = part;
             }
+            else throw new Error(`${part.type} is not supported.`);
+        }
+
+        if (expands.length) {
+            const es: ExpandCollection = {};
+
+            expands.forEach(e => {
+                const exp = this.handlePartArg(e.args[0]);
+                const sel = e.args[1] ? this.handlePartArg(e.args[1]) : null;
+
+                const path = exp.split('/');
+                let ec = es[path[0]] || (es[path[0]] = { children: { } });
+
+                path.slice(1).forEach(p => {
+                    ec = ec.children[p] || (ec.children[p] = { children: { } });
+                });
+
+                ec.select = sel;
+            });
+
+            queryParams.push({ key: '$expand', value: expands.join(',') });
+        }
+
+        if (orders.length) {
+            const value = orders.map(o => {
+                const v = this.handlePartArg(o.args[0]);
+                return o.type.endsWith('Descending') ? (v + ' desc') : v;
+            }).join(',');
+            queryParams.push({ key: '$orderby', value });
+        }
+
+        for (var p in params) {
+            queryParams.push({ key: '$' + p.replace('where', 'filter').toLowerCase(), value: this.handlePartArg(params[p]) });
         }
 
         return this.requestProvider.request<TResult>(queryParams, options);
     }
 
-    handlePart(part: IQueryPart): QueryParameter {
-        const args = part.args.map(a =>
-            a.literal != null || a.exp == null
-                ? a.literal
-                : this.expToStr(a.exp, a.scopes, a.exp.type === ExpressionType.Func ? (a.exp as FuncExpression).parameters : [])
-        ).join(';');
-        return { key: '$' + part.type, value: args };
+    handlePartArg(arg: IPartArgument): string {
+        this.rootLambda = true;
+        return arg.literal != null || arg.exp == null
+            ? arg.literal
+            : this.expToStr(arg.exp, arg.scopes, arg.exp.type === ExpressionType.Func ? (arg.exp as FuncExpression).parameters : [])
     }
-    
+
     expToStr(exp: Expression, scopes: any[], parameters: string[]): string {
         switch (exp.type) {
             case ExpressionType.Literal:
@@ -247,3 +281,8 @@ const functions = {
     'getSeconds': 'second',
     'getFullYear': 'year'
 };
+
+type ExpandContainer = { select?: string, children: ExpandCollection };
+type ExpandCollection = { [expand: string]: ExpandContainer };
+
+// TODO: multi navigation expand desteği için diziye $expand extension metodu. callToStr işlerken $expand için metod adı yerine owner/metod dön!
