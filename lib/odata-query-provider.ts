@@ -244,8 +244,6 @@ export class ODataQueryProvider implements IQueryProvider {
             return 'null';
         if (typeof value === 'string')
             return `"${value.replace(/"/g, '""')}"`;
-        if (Object.prototype.toString.call(value) === '[object Date]')
-            return `"${value.toISOString()}"`;
 
         return value;
     }

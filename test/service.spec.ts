@@ -52,7 +52,7 @@ describe('Service tests', () => {
     });
 
     it('should create expand with multi level using strings 2', () => {
-        const query = service.companies().expand('c => addresses.city.country');
+        const query = service.companies().expand('c => c.addresses.city.country');
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
         expect(provider).property('options').property('params').to.have.length(1);
 
@@ -105,4 +105,5 @@ describe('Service tests', () => {
         const prm = provider.options.params[0];
         expect(prm).property('key').to.equal('$expand');
         expect(prm).property('value').to.equal('addresses($expand=city/country($select=name),$select=city)');
-    });});
+    });
+});
