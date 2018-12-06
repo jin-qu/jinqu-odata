@@ -1,5 +1,5 @@
 import { 
-    IQueryProvider, IQueryPart, Predicate, Func1, Func2, IQueryBase, 
+    IQueryProvider, IQueryPart, Predicate, Func1, IQueryBase, 
     InlineCountInfo, QueryPart, PartArgument, AjaxOptions, AjaxFuncs 
 } from "jinqu";
 
@@ -44,7 +44,7 @@ export class ODataQuery<T> implements IODataQuery<T> {
         return this.create(QueryPart.select(selector, scopes));
     }
 
-    expand<TNav>(navigationSelector: Func2<T, TNav>, selector?: Func2<TNav, any>, ...scopes): IODataQuery<T> {
+    expand<TNav>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IODataQuery<T> {
         return this.create(createExpandPart(navigationSelector, selector, scopes));
     }
 
@@ -71,7 +71,7 @@ export interface IODataQuery<T> extends IQueryBase {
     orderBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
     orderByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
     select<TResult = any>(selector: Func1<T, TResult>, ...scopes): IODataQuery<T>;
-    expand<TNav>(navigationSelector: Func2<T, TNav>, selector?: Func2<TNav, any>, ...scopes): IODataQuery<T>;
+    expand<TNav>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IODataQuery<T>;
     skip(count: number): IODataQuery<T>;
     top(count: number): IODataQuery<T>;
     toArrayAsync(): PromiseLike<T[] & InlineCountInfo>;
@@ -82,7 +82,7 @@ export interface IOrderedODataQuery<T> extends IODataQuery<T> {
     thenByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
 }
 
-export function createExpandPart<T, TNav>(navigationSelector: Func2<T, TNav>, selector: Func2<TNav, any>, scopes: any[]) {
+export function createExpandPart<T, TNav>(navigationSelector: Func1<T, TNav[] | TNav>, selector: Func1<TNav, any>, scopes: any[]) {
     const args = [PartArgument.identifier(navigationSelector, scopes)];
     if (selector) {
         args.push(PartArgument.identifier(selector, scopes));
@@ -96,7 +96,7 @@ export const ODataFuncs = {
 
 declare global {
     interface Array<T> {
-        $expand<TNav>(navigationSelector: Func1<T, TNav>, selector?: Func1<TNav, any>): TNav;
+        $expand<TNav>(navigationSelector: Func1<T, TNav>): TNav;
     }
 }
 

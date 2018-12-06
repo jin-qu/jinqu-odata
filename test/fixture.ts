@@ -11,9 +11,12 @@ export class MockRequestProvider implements IAjaxProvider {
     }
 }
 
-export class Country {}
+export class Country {
+    name: string;
+}
 
 export class City {
+    name: string;
     country: Country;
 }
 

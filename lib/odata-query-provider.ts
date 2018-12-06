@@ -64,28 +64,28 @@ export class ODataQueryProvider implements IQueryProvider {
                 const sel = e.args[1] ? this.handlePartArg(e.args[1]) : null;
 
                 const path = exp.split('/');
-                let ec = es[path[0]] || (es[path[0]] = { children: { } });
+                let ec = es[path[0]] || (es[path[0]] = { children: {} });
 
                 path.slice(1).forEach(p => {
-                    ec = ec.children[p] || (ec.children[p] = { children: { } });
+                    ec = ec.children[p] || (ec.children[p] = { children: {} });
                 });
 
                 ec.select = sel;
             });
 
-            queryParams.push({ key: '$expand', value: expands.join(',') });
+            queryParams.push({ key: '$expand', value: walkExpands(es) });
         }
 
         if (orders.length) {
             const value = orders.map(o => {
                 const v = this.handlePartArg(o.args[0]);
-                return o.type.endsWith('Descending') ? (v + ' desc') : v;
+                return ~descFuncs.indexOf(o.type) ? (v + ' desc') : v;
             }).join(',');
             queryParams.push({ key: '$orderby', value });
         }
 
         for (var p in params) {
-            queryParams.push({ key: '$' + p.replace('where', 'filter').toLowerCase(), value: this.handlePartArg(params[p]) });
+            queryParams.push({ key: '$' + p.replace('where', 'filter'), value: this.handlePartArg(params[p]) });
         }
 
         return this.requestProvider.request<TResult>(queryParams, options);
@@ -96,6 +96,11 @@ export class ODataQueryProvider implements IQueryProvider {
         return arg.literal != null || arg.exp == null
             ? arg.literal
             : this.expToStr(arg.exp, arg.scopes, arg.exp.type === ExpressionType.Func ? (arg.exp as FuncExpression).parameters : [])
+    }
+
+    handleExp(exp: Expression, scopes: any[]) {
+        this.rootLambda = true;
+        return this.expToStr(exp, scopes, exp.type === ExpressionType.Func ? (exp as FuncExpression).parameters : [])
     }
 
     expToStr(exp: Expression, scopes: any[], parameters: string[]): string {
@@ -193,11 +198,15 @@ export class ODataQueryProvider implements IQueryProvider {
         if (callee.type !== ExpressionType.Member && callee.type !== ExpressionType.Variable)
             throw new Error(`Invalid function call ${this.expToStr(exp.callee, scopes, parameters)}`);
 
-        let args = exp.args.map(a => this.expToStr(a, scopes, parameters)).join(', ');
+        let args: string;
         if (callee.type === ExpressionType.Member) {
             const member = callee as MemberExpression;
             const ownerStr = this.expToStr(member.owner, scopes, parameters);
 
+            if (member.name === '$expand')
+                return ownerStr + '/' + this.handleExp(exp.args[0], scopes);
+
+            args = exp.args.map(a => this.expToStr(a, scopes, parameters)).join(', ');
             // handle Math functions
             if (~mathFuncs.indexOf(callee.name) && ownerStr === 'Math')
                 return `${callee.name}(${args})`;
@@ -208,8 +217,11 @@ export class ODataQueryProvider implements IQueryProvider {
             if (callee.name === 'any' || callee.name === 'all')
                 return `${ownerStr}/${callee.name}(${args})`;
 
-            // other supported functions takes owner as the first argument`
+            // other supported functions takes owner as the first argument
             args = args ? `${ownerStr}, ${args}` : ownerStr;
+        }
+        else {
+            args = exp.args.map(a => this.expToStr(a, scopes, parameters)).join(', ');
         }
 
         const oDataFunc = functions[callee.name] || callee.name;
@@ -285,4 +297,15 @@ const functions = {
 type ExpandContainer = { select?: string, children: ExpandCollection };
 type ExpandCollection = { [expand: string]: ExpandContainer };
 
-// TODO: multi navigation expand desteği için diziye $expand extension metodu. callToStr işlerken $expand için metod adı yerine owner/metod dön!
+function walkExpands(e: ExpandCollection) {
+    const expStrs = [];
+    for (const p in e) {
+        const exp = e[p];
+        let childStr = walkExpands(exp.children);
+        const expStr = exp.select
+            ? `${p}(${childStr ? `$expand=${childStr},` : ''}$select=${exp.select})`
+            : childStr ? `${p}/${childStr}` : p;
+        expStrs.push(expStr);
+    }
+    return expStrs.join(',');
+}

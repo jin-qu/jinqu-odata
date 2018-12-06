@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import 'mocha';
 import chai = require('chai');
 import chaiAsPromised = require('chai-as-promised');
-import { CompanyService, MockRequestProvider } from './fixture';
+import { CompanyService, MockRequestProvider, Address } from './fixture';
 
 chai.use(chaiAsPromised);
 
@@ -30,4 +30,79 @@ describe('Service tests', () => {
         expect(prm).property('key').to.equal('$orderby');
         expect(prm).property('value').to.equal('id,name desc');
     });
-});
+
+    it('should create expand with multi level', () => {
+        const query = service.companies().expand(c => c.addresses.$expand(a => a.city).country);
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+        expect(provider).property('options').property('params').to.have.length(1);
+
+        const prm = provider.options.params[0];
+        expect(prm).property('key').to.equal('$expand');
+        expect(prm).property('value').to.equal('addresses/city/country');
+    });
+
+    it('should create expand with multi level using strings 1', () => {
+        const query = service.companies().expand('addresses.city.country');
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+        expect(provider).property('options').property('params').to.have.length(1);
+
+        const prm = provider.options.params[0];
+        expect(prm).property('key').to.equal('$expand');
+        expect(prm).property('value').to.equal('addresses/city/country');
+    });
+
+    it('should create expand with multi level using strings 2', () => {
+        const query = service.companies().expand('c => addresses.city.country');
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+        expect(provider).property('options').property('params').to.have.length(1);
+
+        const prm = provider.options.params[0];
+        expect(prm).property('key').to.equal('$expand');
+        expect(prm).property('value').to.equal('addresses/city/country');
+    });
+
+    it('should create expand with multi level using strings 3', () => {
+        const query = service.companies().expand('c => c.addresses.$expand(a => a.city).country');
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+        expect(provider).property('options').property('params').to.have.length(1);
+
+        const prm = provider.options.params[0];
+        expect(prm).property('key').to.equal('$expand');
+        expect(prm).property('value').to.equal('addresses/city/country');
+    });
+
+    it('should create expand with multi level with explicit calls', () => {
+        const query = service.companies().expand(c => c.addresses)
+            .expand(c => c.addresses.$expand(a => a.city))
+            .expand(c => c.addresses.$expand(a => a.city).country);
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+        expect(provider).property('options').property('params').to.have.length(1);
+
+        const prm = provider.options.params[0];
+        expect(prm).property('key').to.equal('$expand');
+        expect(prm).property('value').to.equal('addresses/city/country');
+    });
+
+    it('should create expand with multi level with explicit calls and selects', () => {
+        const query = service.companies().expand(c => c.addresses, a => a.city)
+            .expand(c => c.addresses.$expand(a => a.city), c => c.country)
+            .expand(c => c.addresses.$expand(a => a.city).country, c => c.name);
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+        expect(provider).property('options').property('params').to.have.length(1);
+
+        const prm = provider.options.params[0];
+        expect(prm).property('key').to.equal('$expand');
+        expect(prm).property('value').to.equal('addresses($expand=city($expand=country($select=name),$select=country),$select=city)');
+    });
+
+    it('should create expand with multi level with explicit calls and mixed selects', () => {
+        const query = service.companies().expand(c => c.addresses, a => a.city)
+            .expand(c => c.addresses.$expand(a => a.city))
+            .expand(c => c.addresses.$expand(a => a.city).country, c => c.name);
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+        expect(provider).property('options').property('params').to.have.length(1);
+
+        const prm = provider.options.params[0];
+        expect(prm).property('key').to.equal('$expand');
+        expect(prm).property('value').to.equal('addresses($expand=city/country($select=name),$select=city)');
+    });});
