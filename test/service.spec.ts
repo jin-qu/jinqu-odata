@@ -72,7 +72,8 @@ describe('Service tests', () => {
     });
 
     it('should create expand with multi level with explicit calls', () => {
-        const query = service.companies().expand(c => c.addresses)
+        const query = service.companies()
+            .expand(c => c.addresses)
             .expand(c => c.addresses.$expand(a => a.city))
             .expand(c => c.addresses.$expand(a => a.city).country);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
@@ -84,7 +85,8 @@ describe('Service tests', () => {
     });
 
     it('should create expand with multi level with explicit calls and selects', () => {
-        const query = service.companies().expand(c => c.addresses, a => a.city)
+        const query = service.companies()
+            .expand(c => c.addresses, a => a.city)
             .expand(c => c.addresses.$expand(a => a.city), c => c.country)
             .expand(c => c.addresses.$expand(a => a.city).country, c => c.name);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
@@ -96,7 +98,8 @@ describe('Service tests', () => {
     });
 
     it('should create expand with multi level with explicit calls and mixed selects', () => {
-        const query = service.companies().expand(c => c.addresses, a => a.city)
+        const query = service.companies()
+            .expand(c => c.addresses, a => a.city)
             .expand(c => c.addresses.$expand(a => a.city))
             .expand(c => c.addresses.$expand(a => a.city).country, c => c.name);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
