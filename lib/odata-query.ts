@@ -1,6 +1,6 @@
 import { 
     IQueryProvider, IQueryPart, Predicate, Func1, IQueryBase, 
-    InlineCountInfo, QueryPart, PartArgument, AjaxOptions, AjaxFuncs 
+    InlineCountInfo, QueryPart, PartArgument, AjaxOptions, AjaxFuncs, Func2 
 } from "jinqu";
 
 export class ODataQuery<T> implements IODataQuery<T> {
@@ -40,10 +40,6 @@ export class ODataQuery<T> implements IODataQuery<T> {
         return <any>this.create(QueryPart.thenByDescending(keySelector, scopes));
     }
 
-    select<TResult = any>(selector: Func1<T, TResult>, ...scopes): IODataQuery<T> {
-        return this.create(QueryPart.select(selector, scopes));
-    }
-
     expand<TNav>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IODataQuery<T> {
         return this.create(createExpandPart(navigationSelector, selector, scopes));
     }
@@ -54,6 +50,18 @@ export class ODataQuery<T> implements IODataQuery<T> {
 
     top(count: number): IODataQuery<T> {
         return this.create(QueryPart.take(count));
+    }
+
+    select<TResult = any>(selector: Func1<T, TResult>, ...scopes): PromiseLike<TResult[] & InlineCountInfo> {
+        return this.provider.executeAsync([...this.parts, QueryPart.select(selector, scopes)]);
+    }
+
+    groupBy<TResult = { TKey }, TKey = any>(keySelector: Func1<T, TKey>, elementSelector?: Func2<TKey, Array<T>, TResult>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo> {
+        return this.provider.executeAsync([...this.parts, QueryPart.groupBy(keySelector, elementSelector, scopes)]);
+    }
+
+    count(predicate?: Predicate<T>, ...scopes) {
+        return this.provider.executeAsync([...this.parts, QueryPart.count(predicate, scopes)]);
     }
 
     toArrayAsync(): PromiseLike<T[] & InlineCountInfo> {
@@ -70,10 +78,13 @@ export interface IODataQuery<T> extends IQueryBase {
     where(predicate: Predicate<T>, ...scopes): IODataQuery<T>;
     orderBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
     orderByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
-    select<TResult = any>(selector: Func1<T, TResult>, ...scopes): IODataQuery<T>;
     expand<TNav>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IODataQuery<T>;
     skip(count: number): IODataQuery<T>;
     top(count: number): IODataQuery<T>;
+
+    select<TResult = any>(selector: Func1<T, TResult>, ...scopes): PromiseLike<TResult[] & InlineCountInfo>;
+    groupBy<TResult = { TKey }, TKey = any>(keySelector: Func1<T, TKey>, elementSelector?: Func2<TKey, Array<T>, TResult>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo>;
+    count(predicate?: Predicate<T>, ...scopes): PromiseLike<T[] & InlineCountInfo>;
     toArrayAsync(): PromiseLike<T[] & InlineCountInfo>;
 }
 

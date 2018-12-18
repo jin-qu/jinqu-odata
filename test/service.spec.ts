@@ -11,102 +11,120 @@ describe('Service tests', () => {
     const provider = new MockRequestProvider();
     const service = new CompanyService(provider);
 
-    it('should create filter parameter', () => {
+    it('should handle filter parameter', async () => {
         const query = service.companies().where(c => c.id === 4 && c.addresses.any(a => a.id > 2));
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
-        expect(provider).property('options').property('params').to.have.length(1);
 
-        const prm = provider.options.params[0];
-        expect(prm).property('key').to.equal('$filter');
-        expect(prm).property('value').to.equal('id eq 4 and addresses/any(a: a/id gt 2)');
+        const url = provider.options.url;
+        const expectedUrl = `Companies?$filter=${encodeURIComponent('id eq 4 and addresses/any(a: a/id gt 2)')}`;
+        expect(url).equal(expectedUrl);
     });
 
-    it('should create order and then descending parameters', () => {
+    it('should handle order and then descending parameters', () => {
         const query = service.companies().orderBy(c => c.id).thenByDescending(c => c.name);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
-        expect(provider).property('options').property('params').to.have.length(1);
 
-        const prm = provider.options.params[0];
-        expect(prm).property('key').to.equal('$orderby');
-        expect(prm).property('value').to.equal('id,name desc');
+        const url = provider.options.url;
+        const expectedUrl = `Companies?$orderby=${encodeURIComponent('id,name desc')}`;
+        expect(url).equal(expectedUrl);
     });
 
-    it('should create expand with multi level', () => {
+    it('should handle expand with multi level', () => {
         const query = service.companies().expand(c => c.addresses.$expand(a => a.city).country);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
-        expect(provider).property('options').property('params').to.have.length(1);
 
-        const prm = provider.options.params[0];
-        expect(prm).property('key').to.equal('$expand');
-        expect(prm).property('value').to.equal('addresses/city/country');
+        const url = provider.options.url;
+        const expectedUrl = `Companies?$expand=${encodeURIComponent('addresses/city/country')}`;
+        expect(url).equal(expectedUrl);
     });
 
-    it('should create expand with multi level using strings 1', () => {
+    it('should handle expand with multi level using strings 1', () => {
         const query = service.companies().expand('addresses.city.country');
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
-        expect(provider).property('options').property('params').to.have.length(1);
 
-        const prm = provider.options.params[0];
-        expect(prm).property('key').to.equal('$expand');
-        expect(prm).property('value').to.equal('addresses/city/country');
+        const url = provider.options.url;
+        const expectedUrl = `Companies?$expand=${encodeURIComponent('addresses/city/country')}`;
+        expect(url).equal(expectedUrl);
     });
 
-    it('should create expand with multi level using strings 2', () => {
+    it('should handle expand with multi level using strings 2', () => {
         const query = service.companies().expand('c => c.addresses.city.country');
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
-        expect(provider).property('options').property('params').to.have.length(1);
 
-        const prm = provider.options.params[0];
-        expect(prm).property('key').to.equal('$expand');
-        expect(prm).property('value').to.equal('addresses/city/country');
+        const url = provider.options.url;
+        const expectedUrl = `Companies?$expand=${encodeURIComponent('addresses/city/country')}`;
+        expect(url).equal(expectedUrl);
     });
 
-    it('should create expand with multi level using strings 3', () => {
+    it('should handle expand with multi level using strings 3', () => {
         const query = service.companies().expand('c => c.addresses.$expand(a => a.city).country');
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
-        expect(provider).property('options').property('params').to.have.length(1);
 
-        const prm = provider.options.params[0];
-        expect(prm).property('key').to.equal('$expand');
-        expect(prm).property('value').to.equal('addresses/city/country');
+        const url = provider.options.url;
+        const expectedUrl = `Companies?$expand=${encodeURIComponent('addresses/city/country')}`;
+        expect(url).equal(expectedUrl);
     });
 
-    it('should create expand with multi level with explicit calls', () => {
+    it('should handle expand with multi level with explicit calls', () => {
         const query = service.companies()
             .expand(c => c.addresses)
             .expand(c => c.addresses.$expand(a => a.city))
             .expand(c => c.addresses.$expand(a => a.city).country);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
-        expect(provider).property('options').property('params').to.have.length(1);
 
-        const prm = provider.options.params[0];
-        expect(prm).property('key').to.equal('$expand');
-        expect(prm).property('value').to.equal('addresses/city/country');
+        const url = provider.options.url;
+        const expectedUrl = `Companies?$expand=${encodeURIComponent('addresses/city/country')}`;
+        expect(url).equal(expectedUrl);
     });
 
-    it('should create expand with multi level with explicit calls and selects', () => {
+    it('should handle expand with multi level with explicit calls and selects', () => {
         const query = service.companies()
             .expand(c => c.addresses, a => a.city)
             .expand(c => c.addresses.$expand(a => a.city), c => c.country)
             .expand(c => c.addresses.$expand(a => a.city).country, c => c.name);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
-        expect(provider).property('options').property('params').to.have.length(1);
 
-        const prm = provider.options.params[0];
-        expect(prm).property('key').to.equal('$expand');
-        expect(prm).property('value').to.equal('addresses($expand=city($expand=country($select=name),$select=country),$select=city)');
+        const url = provider.options.url;
+        const expectedPrm = 'addresses($expand=city($expand=country($select=name),$select=country),$select=city)';
+        const expectedUrl = `Companies?$expand=${encodeURIComponent(expectedPrm)}`;
+        expect(url).equal(expectedUrl);
     });
 
-    it('should create expand with multi level with explicit calls and mixed selects', () => {
+    it('should handle expand with multi level with explicit calls and mixed selects', () => {
         const query = service.companies()
             .expand(c => c.addresses, a => a.city)
             .expand(c => c.addresses.$expand(a => a.city))
             .expand(c => c.addresses.$expand(a => a.city).country, c => c.name);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
-        expect(provider).property('options').property('params').to.have.length(1);
 
-        const prm = provider.options.params[0];
-        expect(prm).property('key').to.equal('$expand');
-        expect(prm).property('value').to.equal('addresses($expand=city/country($select=name),$select=city)');
+        const url = provider.options.url;
+        const expectedPrm = 'addresses($expand=city/country($select=name),$select=city)';
+        const expectedUrl = `Companies?$expand=${encodeURIComponent(expectedPrm)}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it('should handle count', () => {
+        const query = service.companies();
+        expect(query.count()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        expect(url).equal('Companies/$count');
+    });
+
+    it('should handle count with filter', () => {
+        const query = service.companies();
+        expect(query.count(c => c.id > 5)).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `Companies/$count/?$filter=${encodeURIComponent('id gt 5')}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it('should handle groupby', () => {
+        const query = service.companies();
+        expect(query.count()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        expect(url).equal('Companies/$count');
     });
 });

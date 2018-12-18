@@ -18,7 +18,26 @@ export class ODataService implements IRequestProvider<AjaxOptions>  {
             }
             o.url = this.baseAddress + (o.url || '');
         }
-        o.params = (params || []).concat(o.params || []);
+
+        params = params || [];
+        const countPrm = params.find(p => p.key === '$count');
+        if (countPrm) {
+            params = params.filter(p => p !== countPrm);
+        }
+
+        params = params.concat(o.params || []);
+        o.params = [];
+
+        if (params.length) {
+            o.url += '?' + params.map(p => `${p.key}=${encodeURIComponent(p.value)}`).join('&');
+        }
+
+        if (countPrm) {
+            o.url += '/$count';
+            if (countPrm.value) {
+                o.url += `/?$filter=${encodeURIComponent(countPrm.value)}`;
+            }
+        }
 
         return this.ajaxProvider.ajax(o);
     }

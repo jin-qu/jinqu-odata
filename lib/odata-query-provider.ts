@@ -11,7 +11,10 @@ import { ODataQuery, ODataFuncs } from './odata-query';
 const orderFuncs = [QueryFunc.orderBy, QueryFunc.orderByDescending];
 const thenFuncs = [QueryFunc.thenBy, QueryFunc.thenByDescending];
 const descFuncs = [QueryFunc.orderByDescending, QueryFunc.thenByDescending];
-const otherFuncs = [QueryFunc.inlineCount, QueryFunc.where, QueryFunc.select, QueryFunc.skip, QueryFunc.take];
+const otherFuncs = [
+    QueryFunc.inlineCount, QueryFunc.where, QueryFunc.select,
+    QueryFunc.skip, QueryFunc.take, QueryFunc.count, QueryFunc.groupBy
+];
 const mathFuncs = ['round', 'floor', 'ceiling'];
 
 export class ODataQueryProvider implements IQueryProvider {
@@ -40,7 +43,7 @@ export class ODataQueryProvider implements IQueryProvider {
             if (part.type === AjaxFuncs.options) {
                 options.push(part.args[0].literal);
             }
-            else if (part.type === QueryFunc.toArray || part.type === QueryFunc.first) continue;
+            else if (part.type === QueryFunc.toArray || part.type === QueryFunc.first || part.type === QueryFunc.single) continue;
             else if (part.type === ODataFuncs.expand) {
                 expands.push(part);
             }
@@ -53,6 +56,15 @@ export class ODataQueryProvider implements IQueryProvider {
             else if (~otherFuncs.indexOf(part.type)) {
                 params[part.type] = part.args[0];
             }
+            else if (part.type === QueryFunc.groupBy) {
+                const keySelector = this.handlePartArg(part.args[0]);
+                if (part.args.length > 1) {
+                    params[part.type] = `$apply=groupby(${keySelector}, aggregate(${this.handlePartArg(part.args[1])}))`;
+                }
+                else {
+                    params[part.type] = `$apply=groupby(${keySelector})`;
+                }
+            }
             else throw new Error(`${part.type} is not supported.`);
         }
 
@@ -64,7 +76,7 @@ export class ODataQueryProvider implements IQueryProvider {
                 const sel = e.args[1] ? this.handlePartArg(e.args[1]) : null;
 
                 const path = exp.split('/');
-                let ec = es[path[0]] || (es[path[0]] = { children: {} });
+                let ec = es[path[0]] || (es[path[0]] = { children: {} });
 
                 path.slice(1).forEach(p => {
                     ec = ec.children[p] || (ec.children[p] = { children: {} });
@@ -98,7 +110,7 @@ export class ODataQueryProvider implements IQueryProvider {
             : this.expToStr(arg.exp, arg.scopes, arg.exp.type === ExpressionType.Func ? (arg.exp as FuncExpression).parameters : [])
     }
 
-    handleExp(exp: Expression, scopes: any[]) {
+    handleExp(exp: Expression, scopes: any[]) {
         this.rootLambda = true;
         return this.expToStr(exp, scopes, exp.type === ExpressionType.Func ? (exp as FuncExpression).parameters : [])
     }
