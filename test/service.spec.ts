@@ -134,14 +134,17 @@ describe('Service tests', () => {
         expect(query.groupBy(c => ({ deleted: c.deleted }))).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        expect(url).equal('Companies?$apply=groupby((deleted))');
+        const expectedUrl = 'Companies?$apply=groupby((deleted))';
+        expect(url).equal(expectedUrl);
     });
 
-    it('should handle groupby with aggregation', () => {
+    it('should handle groupby with count aggregation', () => {
         const query = service.companies();
-        expect(query.groupBy(c => ({ deleted: c.deleted }))).to.be.fulfilled.and.eventually.be.null;
+        const promise = query.groupBy(c => ({ deleted: c.deleted }), g => ({ deleted: g.deleted, count: g.count() }));
+        expect(promise).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        expect(url).equal('Companies?$apply=groupby((deleted))');
+        const expectedUrl = `Companies?$apply=${encodeURIComponent('groupby((deleted), aggregate(deleted, $count as count))')}`;
+        expect(url).equal(expectedUrl);
     });
 });
