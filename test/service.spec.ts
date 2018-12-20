@@ -29,6 +29,15 @@ describe('Service tests', () => {
         expect(url).equal(expectedUrl);
     });
 
+    it('should handle select', () => {
+        const query = service.companies();
+        expect(query.select(c => ({ ID: c.id, NAME: c.name }))).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `Companies?$select=${encodeURIComponent('id as ID, name as NAME')}`;
+        expect(url).equal(expectedUrl);
+    });
+
     it('should handle expand with multi level', () => {
         const query = service.companies().expand(c => c.addresses.$expand(a => a.city).country);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
@@ -122,9 +131,17 @@ describe('Service tests', () => {
 
     it('should handle groupby', () => {
         const query = service.companies();
-        expect(query.count()).to.be.fulfilled.and.eventually.be.null;
+        expect(query.groupBy(c => ({ deleted: c.deleted }))).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        expect(url).equal('Companies/$count');
+        expect(url).equal('Companies?$apply=groupby((deleted))');
+    });
+
+    it('should handle groupby with aggregation', () => {
+        const query = service.companies();
+        expect(query.groupBy(c => ({ deleted: c.deleted }))).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        expect(url).equal('Companies?$apply=groupby((deleted))');
     });
 });

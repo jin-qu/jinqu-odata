@@ -5,16 +5,16 @@ import {
     BinaryExpression, MemberExpression, IndexerExpression, FuncExpression,
     CallExpression, TernaryExpression
 } from 'jokenizer';
-import { IQueryPart, IRequestProvider, QueryFunc, AjaxFuncs, AjaxOptions, IQueryProvider, QueryParameter, IPartArgument } from "jinqu";
+import { 
+    IQueryPart, IRequestProvider, QueryFunc, AjaxFuncs, 
+    AjaxOptions, IQueryProvider, QueryParameter, IPartArgument 
+} from "jinqu";
 import { ODataQuery, ODataFuncs } from './odata-query';
 
 const orderFuncs = [QueryFunc.orderBy, QueryFunc.orderByDescending];
 const thenFuncs = [QueryFunc.thenBy, QueryFunc.thenByDescending];
 const descFuncs = [QueryFunc.orderByDescending, QueryFunc.thenByDescending];
-const otherFuncs = [
-    QueryFunc.inlineCount, QueryFunc.where, QueryFunc.select,
-    QueryFunc.skip, QueryFunc.take, QueryFunc.count, QueryFunc.groupBy
-];
+const otherFuncs = [QueryFunc.inlineCount, QueryFunc.where, QueryFunc.select, QueryFunc.skip, QueryFunc.take, QueryFunc.count];
 const mathFuncs = ['round', 'floor', 'ceiling'];
 
 export class ODataQueryProvider implements IQueryProvider {
@@ -37,7 +37,8 @@ export class ODataQueryProvider implements IQueryProvider {
             params = {},
             queryParams: QueryParameter[] = [];
         let orders: IQueryPart[] = [],
-            expands: IQueryPart[] = [];
+            expands: IQueryPart[] = [],
+            apply: IQueryPart;
 
         for (let part of parts) {
             if (part.type === AjaxFuncs.options) {
@@ -47,6 +48,9 @@ export class ODataQueryProvider implements IQueryProvider {
             else if (part.type === ODataFuncs.expand) {
                 expands.push(part);
             }
+            else if (part.type === ODataFuncs.apply) {
+                apply = part;
+            }
             else if (~orderFuncs.indexOf(part.type)) {
                 orders = [part];
             }
@@ -55,15 +59,6 @@ export class ODataQueryProvider implements IQueryProvider {
             }
             else if (~otherFuncs.indexOf(part.type)) {
                 params[part.type] = part.args[0];
-            }
-            else if (part.type === QueryFunc.groupBy) {
-                const keySelector = this.handlePartArg(part.args[0]);
-                if (part.args.length > 1) {
-                    params[part.type] = `$apply=groupby(${keySelector}, aggregate(${this.handlePartArg(part.args[1])}))`;
-                }
-                else {
-                    params[part.type] = `$apply=groupby(${keySelector})`;
-                }
             }
             else throw new Error(`${part.type} is not supported.`);
         }
@@ -100,6 +95,17 @@ export class ODataQueryProvider implements IQueryProvider {
             queryParams.push({ key: '$' + p.replace('where', 'filter'), value: this.handlePartArg(params[p]) });
         }
 
+        if (apply) {
+            const keySelector = this.handlePartArg(apply.args[0]);
+            const valueSelector = this.handlePartArg(apply.args[1]);
+            if (valueSelector) {
+                queryParams.push({ key: '$apply', value: `groupby((${keySelector}), aggregate(${valueSelector}))` });
+            }
+            else {
+                queryParams.push({ key: '$apply', value: `groupby((${keySelector}))` });
+            }
+        }
+
         return this.requestProvider.request<TResult>(queryParams, options);
     }
 
@@ -107,7 +113,7 @@ export class ODataQueryProvider implements IQueryProvider {
         this.rootLambda = true;
         return arg.literal != null || arg.exp == null
             ? arg.literal
-            : this.expToStr(arg.exp, arg.scopes, arg.exp.type === ExpressionType.Func ? (arg.exp as FuncExpression).parameters : [])
+            : this.handleExp(arg.exp, arg.scopes);
     }
 
     handleExp(exp: Expression, scopes: any[]) {
@@ -124,7 +130,13 @@ export class ODataQueryProvider implements IQueryProvider {
             case ExpressionType.Unary:
                 return this.unaryToStr(exp as UnaryExpression, scopes, parameters);
             case ExpressionType.Group:
-                return this.groupToStr(exp as GroupExpression, scopes, parameters);
+                // little hack to workaround object grouping
+                // c => ({ id: c.id })
+                const gexp = exp as GroupExpression;
+                if (gexp.expressions.length === 1 && gexp.expressions[0].type === ExpressionType.Object)
+                    return this.expToStr(gexp.expressions[0], scopes, parameters);
+
+                return this.groupToStr(gexp, scopes, parameters);
             case ExpressionType.Object:
                 return this.objectToStr(exp as ObjectExpression, scopes, parameters);
             case ExpressionType.Array:
@@ -169,7 +181,7 @@ export class ODataQueryProvider implements IQueryProvider {
     objectToStr(exp: ObjectExpression, scopes: any[], parameters: string[]) {
         return exp.members.map(m => {
             const ae = m as AssignExpression;
-            return `${ae.name} as ${this.expToStr(ae.right, scopes, parameters)}`;
+            return `${this.expToStr(ae.right, scopes, parameters)} as ${ae.name}`;
         }).join(', ');
     }
 
@@ -214,6 +226,9 @@ export class ODataQueryProvider implements IQueryProvider {
         if (callee.type === ExpressionType.Member) {
             const member = callee as MemberExpression;
             const ownerStr = this.expToStr(member.owner, scopes, parameters);
+
+            if (member.name === 'count')
+                return ownerStr ? `${ownerStr}/$count` : '$count';
 
             if (member.name === '$expand')
                 return ownerStr + '/' + this.handleExp(exp.args[0], scopes);

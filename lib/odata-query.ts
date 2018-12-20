@@ -41,7 +41,11 @@ export class ODataQuery<T> implements IODataQuery<T> {
     }
 
     expand<TNav>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IODataQuery<T> {
-        return this.create(createExpandPart(navigationSelector, selector, scopes));
+        const args = [PartArgument.identifier(navigationSelector, scopes)];
+        if (selector) {
+            args.push(PartArgument.identifier(selector, scopes));
+        }
+        return this.create(new QueryPart(ODataFuncs.expand, args, scopes));
     }
 
     skip(count: number): IODataQuery<T> {
@@ -56,8 +60,13 @@ export class ODataQuery<T> implements IODataQuery<T> {
         return this.provider.executeAsync([...this.parts, QueryPart.select(selector, scopes)]);
     }
 
-    groupBy<TResult = { TKey }, TKey = any>(keySelector: Func1<T, TKey>, elementSelector?: Func2<TKey, Array<T>, TResult>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo> {
-        return this.provider.executeAsync([...this.parts, QueryPart.groupBy(keySelector, elementSelector, scopes)]);
+    groupBy<TResult extends object, TKey extends object>(keySelector: Func1<T, TKey>, elementSelector?: Func2<Array<T>, TResult>, ...scopes: any[]): PromiseLike<(TResult & TKey)[] & InlineCountInfo> {
+        const args = [new PartArgument(keySelector, null, scopes)];
+        if (elementSelector) {
+            args.push(new PartArgument(elementSelector, null, scopes));
+        }
+        const part = new QueryPart(ODataFuncs.apply, args);
+        return <any>this.provider.executeAsync([...this.parts, part]);
     }
 
     count(predicate?: Predicate<T>, ...scopes) {
@@ -83,7 +92,7 @@ export interface IODataQuery<T> extends IQueryBase {
     top(count: number): IODataQuery<T>;
 
     select<TResult = any>(selector: Func1<T, TResult>, ...scopes): PromiseLike<TResult[] & InlineCountInfo>;
-    groupBy<TResult = { TKey }, TKey = any>(keySelector: Func1<T, TKey>, elementSelector?: Func2<TKey, Array<T>, TResult>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo>;
+    groupBy<TResult extends object, TKey extends object>(keySelector: Func1<T, TKey>, elementSelector?: Func2<Array<T>, TResult>, ...scopes: any[]): PromiseLike<(TResult & TKey)[] & InlineCountInfo>;
     count(predicate?: Predicate<T>, ...scopes): PromiseLike<T[] & InlineCountInfo>;
     toArrayAsync(): PromiseLike<T[] & InlineCountInfo>;
 }
@@ -93,7 +102,7 @@ export interface IOrderedODataQuery<T> extends IODataQuery<T> {
     thenByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
 }
 
-export function createExpandPart<T, TNav>(navigationSelector: Func1<T, TNav[] | TNav>, selector: Func1<TNav, any>, scopes: any[]) {
+export function createApplyPart<T, TNav>(navigationSelector: Func1<T, TNav[] | TNav>, selector: Func1<TNav, any>, scopes: any[]) {
     const args = [PartArgument.identifier(navigationSelector, scopes)];
     if (selector) {
         args.push(PartArgument.identifier(selector, scopes));
@@ -102,7 +111,8 @@ export function createExpandPart<T, TNav>(navigationSelector: Func1<T, TNav[] |
 }
 
 export const ODataFuncs = {
-    expand: 'expand'
+    expand: 'expand',
+    apply: 'apply'
 };
 
 declare global {
