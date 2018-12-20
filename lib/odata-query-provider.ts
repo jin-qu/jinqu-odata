@@ -97,7 +97,7 @@ export class ODataQueryProvider implements IQueryProvider {
 
         if (apply) {
             const keySelector = this.handlePartArg(apply.args[0]);
-            const valueSelector = this.handlePartArg(apply.args[1]);
+            const valueSelector = apply.args[1] && this.handlePartArg(apply.args[1]);
             if (valueSelector) {
                 queryParams.push({ key: '$apply', value: `groupby((${keySelector}), aggregate(${valueSelector}))` });
             }
@@ -181,7 +181,8 @@ export class ODataQueryProvider implements IQueryProvider {
     objectToStr(exp: ObjectExpression, scopes: any[], parameters: string[]) {
         return exp.members.map(m => {
             const ae = m as AssignExpression;
-            return `${this.expToStr(ae.right, scopes, parameters)} as ${ae.name}`;
+            const e = this.expToStr(ae.right, scopes, parameters);
+            return e === ae.name ? e : `${e} as ${ae.name}`;
         }).join(', ');
     }
 
