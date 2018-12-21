@@ -2,7 +2,8 @@ import { expect } from 'chai';
 import 'mocha';
 import chai = require('chai');
 import chaiAsPromised = require('chai-as-promised');
-import { CompanyService, MockRequestProvider, Address } from './fixture';
+import { CompanyService, MockRequestProvider, Address, Company } from './fixture';
+import { ODataService } from '..';
 
 chai.use(chaiAsPromised);
 
@@ -11,12 +12,35 @@ describe('Service tests', () => {
     const provider = new MockRequestProvider();
     const service = new CompanyService(provider);
 
-    it('should handle query parameter', async () => {
-        const query = service.companies().setParameter('id', 5);
+    it('should handle base address', async () => {
+        const svc1 = new ODataService('', provider);
+        const query1 = svc1.createQuery<Company>('Companies');
+        expect(query1.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url1 = provider.options.url;
+        expect(url1).equal('Companies');
+
+        const svc2 = new ODataService('api/', provider);
+        const query2 = svc2.createQuery<Company>('Companies');
+        expect(query2.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url2 = provider.options.url;
+        expect(url2).equal('api/Companies');
+
+        const svc3 = new ODataService('api/', provider);
+        const query3 = svc3.createQuery<Company>('');
+        expect(query3.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url3 = provider.options.url;
+        expect(url3).equal('api/');
+    });
+
+    it('should handle empty request', async () => {
+        const query = service.companies();
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedUrl = `api/Companies?id=5`;
+        const expectedUrl = 'api/Companies';
         expect(url).equal(expectedUrl);
     });
 
@@ -25,6 +49,15 @@ describe('Service tests', () => {
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         expect(provider.options.headers).property('Auth').is.equal('12345');
+    });
+
+    it('should handle query parameter', async () => {
+        const query = service.companies().setParameter('id', 5);
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = 'api/Companies?id=5';
+        expect(url).equal(expectedUrl);
     });
 
     it('should handle inline count', async () => {
