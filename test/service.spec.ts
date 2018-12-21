@@ -11,6 +11,22 @@ describe('Service tests', () => {
     const provider = new MockRequestProvider();
     const service = new CompanyService(provider);
 
+    it('should handle query parameter', async () => {
+        const query = service.companies().setParameter('id', 5);
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `Companies?id=5`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it('should handle header (options)', async () => {
+        const query = service.companies().withOptions({ headers: { 'Auth': '12345' } });
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        expect(provider.options.headers).property('Auth').is.equal('12345');
+    });
+
     it('should handle filter parameter', async () => {
         const query = service.companies().where(c => c.id === 4 && c.addresses.any(a => a.id > 2));
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
@@ -145,6 +161,16 @@ describe('Service tests', () => {
 
         const url = provider.options.url;
         const expectedUrl = `Companies?$apply=${encodeURIComponent('groupby((deleted), aggregate(deleted, $count as count))')}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it('should handle groupby with sum aggregation', () => {
+        const query = service.companies();
+        const promise = query.groupBy(c => ({ deleted: c.deleted }), g => ({ deleted: g.deleted, sumId: g.sum(x => x.id) }));
+        expect(promise).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `Companies?$apply=${encodeURIComponent('groupby((deleted), aggregate(deleted, id with sum as sumId))')}`;
         expect(url).equal(expectedUrl);
     });
 });

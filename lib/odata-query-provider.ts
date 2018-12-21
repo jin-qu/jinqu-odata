@@ -16,6 +16,7 @@ const thenFuncs = [QueryFunc.thenBy, QueryFunc.thenByDescending];
 const descFuncs = [QueryFunc.orderByDescending, QueryFunc.thenByDescending];
 const otherFuncs = [QueryFunc.inlineCount, QueryFunc.where, QueryFunc.select, QueryFunc.skip, QueryFunc.take, QueryFunc.count];
 const mathFuncs = ['round', 'floor', 'ceiling'];
+const aggregateFuncs = ['sum', 'max', 'min'];
 
 export class ODataQueryProvider implements IQueryProvider {
 
@@ -230,6 +231,9 @@ export class ODataQueryProvider implements IQueryProvider {
 
             if (member.name === 'count')
                 return ownerStr ? `${ownerStr}/$count` : '$count';
+
+            if (~aggregateFuncs.indexOf(member.name))
+                return `${this.handleExp(exp.args[0], scopes)} with ${member.name}`;
 
             if (member.name === '$expand')
                 return ownerStr + '/' + this.handleExp(exp.args[0], scopes);
