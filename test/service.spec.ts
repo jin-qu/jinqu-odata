@@ -4,6 +4,7 @@ import chai = require('chai');
 import chaiAsPromised = require('chai-as-promised');
 import { CompanyService, MockRequestProvider, Address, Company } from './fixture';
 import { ODataService } from '..';
+import { ODataQueryProvider } from '../lib/odata-query-provider';
 
 chai.use(chaiAsPromised);
 
@@ -11,6 +12,19 @@ describe('Service tests', () => {
 
     const provider = new MockRequestProvider();
     const service = new CompanyService(provider);
+
+    it('should throw for sync execution', async () => {
+        const svc = new ODataQueryProvider(service);
+        expect(() => svc.execute([])).to.throw();
+    });
+
+    it('should handle missing parameters', async () => {
+        const svc = new ODataService(null, provider);
+        expect(svc.request(null, null)).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        expect(url).is.undefined;
+    });
 
     it('should handle base address', async () => {
         const svc1 = new ODataService('', provider);
