@@ -54,6 +54,15 @@ describe('Service tests', () => {
         expect(url).equal(expectedUrl);
     });
 
+    it('should handle order descending and then ascending parameters', () => {
+        const query = service.companies().orderByDescending(c => c.id).thenBy(c => c.name);
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `api/Companies?$orderby=${encodeURIComponent('id desc,name')}`;
+        expect(url).equal(expectedUrl);
+    });
+
     it('should handle select', () => {
         const query = service.companies();
         expect(query.select(c => ({ ID: c.id, NAME: c.name }))).to.be.fulfilled.and.eventually.be.null;

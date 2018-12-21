@@ -105,14 +105,6 @@ export interface IOrderedODataQuery<T> extends IODataQuery<T> {
     thenByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
 }
 
-export function createApplyPart<T, TNav>(navigationSelector: Func1<T, TNav[] | TNav>, selector: Func1<TNav, any>, scopes: any[]) {
-    const args = [PartArgument.identifier(navigationSelector, scopes)];
-    if (selector) {
-        args.push(PartArgument.identifier(selector, scopes));
-    }
-    return new QueryPart(ODataFuncs.expand, args, scopes);
-}
-
 export const ODataFuncs = {
     expand: 'expand',
     apply: 'apply'
@@ -122,8 +114,4 @@ declare global {
     interface Array<T> {
         $expand<TNav>(navigationSelector: Func1<T, TNav>): TNav;
     }
-}
-
-Array.prototype.$expand = function () {
-    return this[0];
 }
