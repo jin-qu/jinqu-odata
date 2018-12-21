@@ -1,6 +1,6 @@
 import {
     IQueryProvider, IQueryPart, Predicate, Func1, IQueryBase,
-    InlineCountInfo, QueryPart, PartArgument, AjaxOptions, AjaxFuncs
+    InlineCountInfo, QueryPart, PartArgument, AjaxOptions, AjaxFuncs, QueryFunc
 } from "jinqu";
 
 export class ODataQuery<T> implements IODataQuery<T> {

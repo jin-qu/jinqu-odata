@@ -27,6 +27,15 @@ describe('Service tests', () => {
         expect(provider.options.headers).property('Auth').is.equal('12345');
     });
 
+    it('should handle inline count', async () => {
+        const query = service.companies().inlineCount();
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `Companies?$inlinecount=allpages`;
+        expect(url).equal(expectedUrl);
+    });
+
     it('should handle filter parameter', async () => {
         const query = service.companies().where(c => c.id === 4 && c.addresses.any(a => a.id > 2));
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;

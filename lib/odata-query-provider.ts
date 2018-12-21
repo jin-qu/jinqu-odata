@@ -7,7 +7,7 @@ import {
 } from 'jokenizer';
 import { 
     IQueryPart, IRequestProvider, QueryFunc, AjaxFuncs, 
-    AjaxOptions, IQueryProvider, QueryParameter, IPartArgument 
+    AjaxOptions, IQueryProvider, QueryParameter, IPartArgument, PartArgument 
 } from "jinqu";
 import { ODataQuery, ODataFuncs } from './odata-query';
 
@@ -37,7 +37,8 @@ export class ODataQueryProvider implements IQueryProvider {
         const options: AjaxOptions[] = [],
             params = {},
             queryParams: QueryParameter[] = [];
-        let orders: IQueryPart[] = [],
+        let inlineCount = false,
+            orders: IQueryPart[] = [],
             expands: IQueryPart[] = [],
             apply: IQueryPart;
 
@@ -46,6 +47,9 @@ export class ODataQueryProvider implements IQueryProvider {
                 options.push(part.args[0].literal);
             }
             else if (part.type === QueryFunc.toArray || part.type === QueryFunc.first || part.type === QueryFunc.single) continue;
+            else if (part.type === QueryFunc.inlineCount) {
+                inlineCount = part.args[0].literal !== false;
+            }
             else if (part.type === ODataFuncs.expand) {
                 expands.push(part);
             }
@@ -90,6 +94,10 @@ export class ODataQueryProvider implements IQueryProvider {
                 return ~descFuncs.indexOf(o.type) ? (v + ' desc') : v;
             }).join(',');
             queryParams.push({ key: '$orderby', value });
+        }
+
+        if (inlineCount) {
+            queryParams.push({ key: '$inlinecount', value: 'allpages' });
         }
 
         for (var p in params) {
