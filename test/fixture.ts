@@ -37,7 +37,7 @@ export interface Company {
 export class CompanyService extends ODataService {
 
     constructor(provider?: MockRequestProvider) {
-        super('', provider);
+        super('api', provider);
     }
 
     companies() {
