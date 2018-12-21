@@ -101,7 +101,8 @@ export class ODataQueryProvider implements IQueryProvider {
         }
 
         for (var p in params) {
-            queryParams.push({ key: '$' + p.replace('where', 'filter'), value: this.handlePartArg(params[p]) });
+            const prmName = p.replace('where', 'filter').replace('take', 'top');
+            queryParams.push({ key: '$' + prmName, value: this.handlePartArg(params[p]) });
         }
 
         if (apply) {

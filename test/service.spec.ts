@@ -137,6 +137,15 @@ describe('Service tests', () => {
         expect(url).equal(expectedUrl);
     });
 
+    it('should handle skip and top', async () => {
+        const query = service.companies().skip(20).top(10);
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = 'Companies?$skip=20&$top=10';
+        expect(url).equal(expectedUrl);
+    });
+
     it('should handle count', () => {
         const query = service.companies();
         expect(query.count()).to.be.fulfilled.and.eventually.be.null;
