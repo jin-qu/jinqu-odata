@@ -85,11 +85,11 @@ describe('Service tests', () => {
 
     it('should handle filter parameter', async () => {
         const query = service.companies()
-            .where(c => c.id === 4 && (!c.addresses.any(a => a.id > 1000) || c.addresses.all(a => a.id > 1000)));
+            .where(c => c.id === 4 && (!c.addresses.any(a => a.id > 1000) || c.addresses.all(a => a.id >= 1000)));
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedPrm = 'id eq 4 and (not addresses/any(a: a/id gt 1000) or addresses/all(a: a/id gt 1000))';
+        const expectedPrm = 'id eq 4 and (not addresses/any(a: a/id gt 1000) or addresses/all(a: a/id ge 1000))';
         const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
         expect(url).equal(expectedUrl);
     });
@@ -117,7 +117,7 @@ describe('Service tests', () => {
         expect(query.select(c => ({ ID: c.id, NAME: c.name, count: c.addresses.count() }))).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedUrl = `api/Companies?$select=${encodeURIComponent('id as ID, name as NAME, addresses/$count as count')}`;
+        const expectedUrl = `api/Companies?$select=${encodeURIComponent('id as ID,name as NAME,addresses/$count as count')}`;
         expect(url).equal(expectedUrl);
     });
 
@@ -236,7 +236,7 @@ describe('Service tests', () => {
         expect(promise).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedUrl = `api/Companies?$apply=${encodeURIComponent('groupby((deleted), aggregate(deleted, $count as count))')}`;
+        const expectedUrl = `api/Companies?$apply=${encodeURIComponent('groupby((deleted),aggregate(deleted,$count as count))')}`;
         expect(url).equal(expectedUrl);
     });
 
@@ -246,12 +246,12 @@ describe('Service tests', () => {
         expect(promise).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedUrl = `api/Companies?$apply=${encodeURIComponent('groupby((deleted), aggregate(deleted, id with sum as sumId))')}`;
+        const expectedUrl = `api/Companies?$apply=${encodeURIComponent('groupby((deleted),aggregate(deleted,id with sum as sumId))')}`;
         expect(url).equal(expectedUrl);
     });
 
     it('should handle round function', async () => {
-        const query = service.companies().where(c => Math.round(c.id) === 5);
+        const query = service.companies().where(c => Math.round(c.id) == 5);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;

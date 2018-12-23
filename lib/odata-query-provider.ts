@@ -109,7 +109,7 @@ export class ODataQueryProvider implements IQueryProvider {
             const keySelector = this.handlePartArg(apply.args[0]);
             const valueSelector = apply.args[1] && this.handlePartArg(apply.args[1]);
             if (valueSelector) {
-                queryParams.push({ key: '$apply', value: `groupby((${keySelector}), aggregate(${valueSelector}))` });
+                queryParams.push({ key: '$apply', value: `groupby((${keySelector}),aggregate(${valueSelector}))` });
             }
             else {
                 queryParams.push({ key: '$apply', value: `groupby((${keySelector}))` });
@@ -185,7 +185,7 @@ export class ODataQueryProvider implements IQueryProvider {
     }
 
     groupToStr(exp: GroupExpression, scopes: any[], parameters: string[]) {
-        return `(${exp.expressions.map(e => this.expToStr(e, scopes, parameters)).join(', ')})`;
+        return `(${exp.expressions.map(e => this.expToStr(e, scopes, parameters)).join(',')})`;
     }
 
     objectToStr(exp: ObjectExpression, scopes: any[], parameters: string[]) {
@@ -193,11 +193,11 @@ export class ODataQueryProvider implements IQueryProvider {
             const ae = m as AssignExpression;
             const e = this.expToStr(ae.right, scopes, parameters);
             return e === ae.name ? e : `${e} as ${ae.name}`;
-        }).join(', ');
+        }).join(',');
     }
 
     arrayToStr(exp: ArrayExpression, scopes: any[], parameters: string[]) {
-        return `new[] {${exp.items.map(e => this.expToStr(e, scopes, parameters)).join(', ')}}`;
+        return `new[] {${exp.items.map(e => this.expToStr(e, scopes, parameters)).join(',')}}`;
     }
 
     binaryToStr(exp: BinaryExpression, scopes: any[], parameters: string[]) {
@@ -223,7 +223,7 @@ export class ODataQueryProvider implements IQueryProvider {
     funcToStr(exp: FuncExpression, scopes: any[], parameters: string[]) {
         const rl = this.rootLambda;
         this.rootLambda = false;
-        const prm = rl ? '' : (exp.parameters.join(', ') + ': ');
+        const prm = rl ? '' : (exp.parameters.join(',') + ': ');
         const body = this.expToStr(exp.body, scopes, parameters);
         return prm + body;
     }
@@ -247,7 +247,7 @@ export class ODataQueryProvider implements IQueryProvider {
             if (member.name === '$expand')
                 return ownerStr + '/' + this.handleExp(exp.args[0], scopes);
 
-            args = exp.args.map(a => this.expToStr(a, scopes, parameters)).join(', ');
+            args = exp.args.map(a => this.expToStr(a, scopes, parameters)).join(',');
             // handle Math functions
             if (~mathFuncs.indexOf(callee.name) && ownerStr === 'Math')
                 return `${callee.name}(${args})`;
@@ -262,7 +262,7 @@ export class ODataQueryProvider implements IQueryProvider {
             args = args ? `${ownerStr}, ${args}` : ownerStr;
         }
         else {
-            args = exp.args.map(a => this.expToStr(a, scopes, parameters)).join(', ');
+            args = exp.args.map(a => this.expToStr(a, scopes, parameters)).join(',');
         }
 
         const oDataFunc = functions[callee.name] || callee.name;
