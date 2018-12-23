@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import 'mocha';
 import chai = require('chai');
 import chaiAsPromised = require('chai-as-promised');
-import { CompanyService, MockRequestProvider, Address, Company } from './fixture';
+import { CompanyService, MockRequestProvider, Company } from './fixture';
 import { ODataService } from '..';
 import { ODataQueryProvider } from '../lib/odata-query-provider';
 
@@ -12,6 +12,11 @@ describe('Service tests', () => {
 
     const provider = new MockRequestProvider();
     const service = new CompanyService(provider);
+
+    it('should create with default parameters', async () => {
+        const svc = new ODataService();
+        expect(svc).to.not.null;
+    });
 
     it('should throw for sync execution', async () => {
         const svc = new ODataQueryProvider(service);
@@ -297,11 +302,11 @@ describe('Service tests', () => {
     });
 
     it('should handle other operators', async () => {
-        const query = service.companies().where(c => ((c.id + 4 - 2) * 4 / 2) % 2 == 1);
+        const query = service.companies().where(c => ((c.id + 4 - 2) * 4 / 2) % 2 == 1 && c.id != 42 && -c.id !== 19);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedPrm = '((id add 4 sub 2) mul 4 div 2) mod 2 eq 1';
+        const expectedPrm = '((id add 4 sub 2) mul 4 div 2) mod 2 eq 1 and id ne 42 and -id ne 19';
         const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
         expect(url).equal(expectedUrl);
     });

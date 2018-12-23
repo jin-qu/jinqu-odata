@@ -210,10 +210,6 @@ export class ODataQueryProvider implements IQueryProvider {
         return owner ? `${owner}/${exp.name}` : exp.name;
     }
 
-    indexerToStr(exp: IndexerExpression, scopes: any[], parameters: string[]) {
-        return `${this.expToStr(exp.owner, scopes, parameters)}[${this.expToStr(exp.key, scopes, parameters)}]`;
-    }
-
     funcToStr(exp: FuncExpression, scopes: any[], parameters: string[]) {
         const rl = this.rootLambda;
         this.rootLambda = false;
