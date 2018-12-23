@@ -18,6 +18,16 @@ describe('Service tests', () => {
         expect(() => svc.execute([])).to.throw();
     });
 
+    it('should throw for unknown part', async () => {
+        const svc = new ODataQueryProvider(service);
+        expect(() => svc.execute([{ type: 'UNKNOWN', args: [], scopes: [] }])).to.throw();
+    });
+
+    it('should throw for unsupported expression', async () => {
+        const query = service.companies().where(c => c.name[1] === 'a');
+        expect(() => query.toArrayAsync()).to.throw();
+    });
+
     it('should handle missing parameters', async () => {
         const svc = new ODataService(null, provider);
         expect(svc.request(null, null)).to.be.fulfilled.and.eventually.be.null;
@@ -118,6 +128,15 @@ describe('Service tests', () => {
 
         const url = provider.options.url;
         const expectedUrl = `api/Companies?$select=${encodeURIComponent('id as ID,name as NAME,addresses/$count as count')}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it('should handle select with ternary', () => {
+        const query = service.companies();
+        expect(query.select(c => ({ ID: c.id, NAME: c.name, STATE: c.deleted ? 'DELETED' : '' }))).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `api/Companies?$select=${encodeURIComponent('id as ID,name as NAME,deleted ? "DELETED" : "" as STATE')}`;
         expect(url).equal(expectedUrl);
     });
 
@@ -250,12 +269,21 @@ describe('Service tests', () => {
         expect(url).equal(expectedUrl);
     });
 
-    it('should handle round function', async () => {
-        const query = service.companies().where(c => Math.round(c.id) == 5);
+    it('should handle length', async () => {
+        const query = service.companies().where(c => c.name.length < 5);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedUrl = `api/Companies?$filter=${encodeURIComponent('round(id) eq 5')}`;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent('length(name) lt 5')}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it('should handle round function', async () => {
+        const query = service.companies().where(c => Math.round(c.id) <= 5);
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent('round(id) le 5')}`;
         expect(url).equal(expectedUrl);
     });
 
@@ -265,6 +293,16 @@ describe('Service tests', () => {
 
         const url = provider.options.url;
         const expectedUrl = `api/Companies?$filter=${encodeURIComponent('substringof("flix", name)')}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it('should handle other operators', async () => {
+        const query = service.companies().where(c => ((c.id + 4 - 2) * 4 / 2) % 2 == 1);
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedPrm = '((id add 4 sub 2) mul 4 div 2) mod 2 eq 1';
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
         expect(url).equal(expectedUrl);
     });
 });

@@ -151,8 +151,6 @@ export class ODataQueryProvider implements IQueryProvider {
                 return this.groupToStr(gexp, scopes, parameters);
             case ExpressionType.Object:
                 return this.objectToStr(exp as ObjectExpression, scopes, parameters);
-            case ExpressionType.Array:
-                return this.arrayToStr(exp as ArrayExpression, scopes, parameters);
             case ExpressionType.Binary:
                 return this.binaryToStr(exp as BinaryExpression, scopes, parameters);
             case ExpressionType.Member:
@@ -194,10 +192,6 @@ export class ODataQueryProvider implements IQueryProvider {
             const e = this.expToStr(ae.right, scopes, parameters);
             return e === ae.name ? e : `${e} as ${ae.name}`;
         }).join(',');
-    }
-
-    arrayToStr(exp: ArrayExpression, scopes: any[], parameters: string[]) {
-        return `new[] {${exp.items.map(e => this.expToStr(e, scopes, parameters)).join(',')}}`;
     }
 
     binaryToStr(exp: BinaryExpression, scopes: any[], parameters: string[]) {
@@ -297,7 +291,7 @@ function getBinaryOp(op: string) {
         case '>': return 'gt';
         case '>=': return 'ge';
         case '<': return 'lt';
-        case '>=': return 'le';
+        case '<=': return 'le';
         case '+': return 'add';
         case '-': return 'sub';
         case '*': return 'mul';
