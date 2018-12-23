@@ -141,7 +141,9 @@ export class ODataQueryProvider implements IQueryProvider {
                 return this.unaryToStr(exp as UnaryExpression, scopes, parameters);
             case ExpressionType.Group:
                 // little hack to workaround object grouping
-                // c => ({ id: c.id })
+                // "c => ({ id: c.id })" expression generates "(id)" and OData does not support that
+                // but we have to use that syntax to use ObjectExpression with lambdas
+                // so, we unwrap groups if they contain only one ObjectExpression
                 const gexp = exp as GroupExpression;
                 if (gexp.expressions.length === 1 && gexp.expressions[0].type === ExpressionType.Object)
                     return this.expToStr(gexp.expressions[0], scopes, parameters);
@@ -155,8 +157,6 @@ export class ODataQueryProvider implements IQueryProvider {
                 return this.binaryToStr(exp as BinaryExpression, scopes, parameters);
             case ExpressionType.Member:
                 return this.memberToStr(exp as MemberExpression, scopes, parameters);
-            case ExpressionType.Indexer:
-                return this.indexerToStr(exp as IndexerExpression, scopes, parameters);
             case ExpressionType.Func:
                 return this.funcToStr(exp as FuncExpression, scopes, parameters);
             case ExpressionType.Call:
@@ -310,7 +310,7 @@ function getBinaryOp(op: string) {
 }
 
 function getUnaryOp(op) {
-    if (op === '!') return 'not';
+    if (op === '!') return 'not ';
 
     return op;
 }
