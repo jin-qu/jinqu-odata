@@ -3,11 +3,14 @@ import { ODataService } from '..';
 
 export class MockRequestProvider implements IAjaxProvider {
 
-    options: AjaxOptions;
+    constructor(private readonly result = null) {
+    }
 
+    options: AjaxOptions;
+    
     ajax<T>(options: AjaxOptions) {
         this.options = options;
-        return new Promise<T>(resolve => resolve(null));
+        return new Promise<T>(resolve => resolve(this.result));
     }
 }
 

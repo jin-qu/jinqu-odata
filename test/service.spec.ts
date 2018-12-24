@@ -25,7 +25,7 @@ describe('Service tests', () => {
 
     it('should throw for unknown part', async () => {
         const svc = new ODataQueryProvider(service);
-        expect(() => svc.execute([{ type: 'UNKNOWN', args: [], scopes: [] }])).to.throw();
+        expect(() => svc.execute([{ type: 'UNKNOWN', args: [], scopes: [] }])).to.throw();
     });
 
     it('should throw for unsupported expression', async () => {
@@ -95,12 +95,27 @@ describe('Service tests', () => {
     });
 
     it('should handle inline count', async () => {
-        const query = service.companies().inlineCount();
-        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+        const value1 = [];
+        const result1 = { 'odata.count': 100, value: value1 };
+        const prv1 = new MockRequestProvider(result1);
+        const query1 = new CompanyService(prv1).companies().inlineCount();
+        const response1 = await query1.toArrayAsync();
+        const url1 = prv1.options.url;
+        const expectedUrl1 = `api/Companies?$inlinecount=allpages`;
+        expect(url1).equal(expectedUrl1);
+        expect(response1).eq(value1);
+        expect(response1.$inlineCount).eq(100);
 
-        const url = provider.options.url;
-        const expectedUrl = `api/Companies?$inlinecount=allpages`;
-        expect(url).equal(expectedUrl);
+        const value2 = [];
+        const result2 = { value: value2 };
+        const prv2 = new MockRequestProvider(result2);
+        const query2 = new CompanyService(prv2).companies().inlineCount();
+        const response2 = await query2.toArrayAsync();
+        const url2 = prv1.options.url;
+        const expectedUrl2 = `api/Companies?$inlinecount=allpages`;
+        expect(url2).equal(expectedUrl2);
+        expect(response2).eq(value2);
+        expect(response2.$inlineCount).is.undefined;
     });
 
     it('should handle filter parameter', async () => {
