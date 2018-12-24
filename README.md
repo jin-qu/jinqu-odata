@@ -16,7 +16,8 @@ npm i jinqu-odata
 ## Usage
 
 We can create a service class for our OData endpoint, or use ODataService directly.
-Creating a service type:
+
+* Creating a service type:
 
 ```typescript
 export class CompanyService extends ODataService {
@@ -39,7 +40,7 @@ With the code above, we are loading all **Company** resources.
 
 You can use [jinqu Swagger CodeGen](https://github.com/jin-qu/swagger-codegen/) to create TypeScript metadata for your API, if you have **Swagger** integration.
 
-Using ODataService:
+* Using ODataService:
 
 ```typescript
 const service = new ODataService('odata');
