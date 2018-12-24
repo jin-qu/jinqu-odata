@@ -25,7 +25,7 @@ describe('Service tests', () => {
 
     it('should throw for unknown part', async () => {
         const svc = new ODataQueryProvider(service);
-        expect(() => svc.execute([{ type: 'UNKNOWN', args: [], scopes: [] }])).to.throw();
+        expect(() => svc.executeAsync([{ type: 'UNKNOWN', args: [], scopes: [] }])).to.throw();
     });
 
     it('should throw for unsupported expression', async () => {

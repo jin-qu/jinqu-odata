@@ -219,41 +219,36 @@ export class ODataQueryProvider implements IQueryProvider {
     }
 
     callToStr(exp: CallExpression, scopes: any[], parameters: string[]) {
-        const callee = exp.callee as VariableExpression;
-        if (callee.type !== ExpressionType.Member && callee.type !== ExpressionType.Variable)
+        const callee = exp.callee as MemberExpression;
+        if (callee.type !== ExpressionType.Member)
             throw new Error(`Invalid function call ${this.expToStr(exp.callee, scopes, parameters)}`);
 
         let args: string;
-        if (callee.type === ExpressionType.Member) {
-            const member = callee as MemberExpression;
-            const ownerStr = this.expToStr(member.owner, scopes, parameters);
+        const member = callee as MemberExpression;
+        const ownerStr = this.expToStr(member.owner, scopes, parameters);
 
-            if (member.name === 'count')
-                return ownerStr ? `${ownerStr}/$count` : '$count';
+        if (member.name === 'count')
+            return ownerStr ? `${ownerStr}/$count` : '$count';
 
-            if (~aggregateFuncs.indexOf(member.name))
-                return `${this.handleExp(exp.args[0], scopes)} with ${member.name}`;
+        if (~aggregateFuncs.indexOf(member.name))
+            return `${this.handleExp(exp.args[0], scopes)} with ${member.name}`;
 
-            if (member.name === '$expand')
-                return ownerStr + '/' + this.handleExp(exp.args[0], scopes);
+        if (member.name === '$expand')
+            return ownerStr + '/' + this.handleExp(exp.args[0], scopes);
 
-            args = exp.args.map(a => this.expToStr(a, scopes, parameters)).join(',');
-            // handle Math functions
-            if (~mathFuncs.indexOf(callee.name) && ownerStr === 'Math')
-                return `${callee.name}(${args})`;
-            // substringof is the only function where owner is the second parameter
-            if (callee.name === 'includes')
-                return `substringof(${args}, ${ownerStr})`;
-            // any and all are the only functions which can be called on owner
-            if (callee.name === 'any' || callee.name === 'all')
-                return `${ownerStr}/${callee.name}(${args})`;
+        args = exp.args.map(a => this.expToStr(a, scopes, parameters)).join(',');
+        // handle Math functions
+        if (~mathFuncs.indexOf(callee.name) && ownerStr === 'Math')
+            return `${callee.name}(${args})`;
+        // substringof is the only function where owner is the second parameter
+        if (callee.name === 'includes')
+            return `substringof(${args}, ${ownerStr})`;
+        // any and all are the only functions which can be called on owner
+        if (callee.name === 'any' || callee.name === 'all')
+            return `${ownerStr}/${callee.name}(${args})`;
 
-            // other supported functions takes owner as the first argument
-            args = args ? `${ownerStr},${args}` : ownerStr;
-        }
-        else {
-            args = exp.args.map(a => this.expToStr(a, scopes, parameters)).join(',');
-        }
+        // other supported functions takes owner as the first argument
+        args = args ? `${ownerStr},${args}` : ownerStr;
 
         const oDataFunc = functions[callee.name] || callee.name.toLowerCase();
         return `${oDataFunc}(${args})`;
