@@ -103,7 +103,9 @@ const result = await query.where(c => c.name.startsWith('Net'));
 | Math.floor | floor |
 | Math.ceiling | ceiling |
 
-### inlineCount
+### InlineCount
+
+We can request the count of resources (before applying **skip** and **top**) for paging support. jinqu-odata will make the value available for us.
 
 ```typescript
 // enable inline count in query
@@ -118,6 +120,7 @@ We execute the query immediately after a select.
 
 ```typescript
 const result = await query.select(c => ({ name: c.name }));
+// $select=name
 ```
 
 OData does not allow primitive results (result must be object), so we enforce it:
@@ -142,6 +145,7 @@ Below query will **skip** 20 items and load only 10 of them.
 
 ```typescript
 const result = await query.skip(20).top(10).toArrayAsync();
+// $skip=20&$top=10
 ```
 
 ### Expand
@@ -175,9 +179,10 @@ const promise = await query.groupBy(
     c => ({ deleted: c.deleted }),
     g => ({ deleted: g.deleted, count: g.count() })
 );
+// $apply=groupby((deleted),aggregate(deleted,$count as count))
 ```
 
-### Count
+### Count
 
 To get the count of the resources, you can use the syntax below:
 
@@ -192,6 +197,7 @@ To execute a query and get a promise you can call **toArrayAsync**.
 
 ```typescript
 const result = await query.where(c => c.id > 42).toArrayAsync();
+// $filter=id gt 42
 ```
 
 ## License
