@@ -33,6 +33,11 @@ describe('Service tests', () => {
         expect(() => query.toArrayAsync()).to.throw();
     });
 
+    it('should throw for invalid callee', () => {
+        const query = service.companies().where('c => c.id.toString()() == 1');
+        expect(() => query.toArrayAsync()).to.throw();
+    });
+
     it('should handle missing parameters', async () => {
         const svc = new ODataService(null, provider);
         expect(svc.request(null, null)).to.be.fulfilled.and.eventually.be.null;
@@ -298,6 +303,44 @@ describe('Service tests', () => {
 
         const url = provider.options.url;
         const expectedUrl = `api/Companies?$filter=${encodeURIComponent('substringof("flix", name)')}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it('should handle substr function', async () => {
+        const query = service.companies().where(c => c.name.substr(0, 2) == 'Ne');
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent('substring(name,0,2) eq "Ne"')}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it('should handle lower function', async () => {
+        const query = service.companies().where(c => c.name.toLowerCase() === 'netflix');
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent('tolower(name) eq "netflix"')}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it('should handle startsWith function', async () => {
+        const query = service.companies().where(c => c.name.startsWith('Net'));
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent('startswith(name,"Net")')}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it('should handle date', async () => {
+        const date = new Date(1592, 2, 14);
+        const query = service.companies().where(c => c.createDate < date && c.name != null, { date });
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedPrm = `createDate lt datetime'${date.toISOString()}' and name ne null`;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
         expect(url).equal(expectedUrl);
     });
 

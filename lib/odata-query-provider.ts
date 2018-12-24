@@ -249,13 +249,13 @@ export class ODataQueryProvider implements IQueryProvider {
                 return `${ownerStr}/${callee.name}(${args})`;
 
             // other supported functions takes owner as the first argument
-            args = args ? `${ownerStr}, ${args}` : ownerStr;
+            args = args ? `${ownerStr},${args}` : ownerStr;
         }
         else {
             args = exp.args.map(a => this.expToStr(a, scopes, parameters)).join(',');
         }
 
-        const oDataFunc = functions[callee.name] || callee.name;
+        const oDataFunc = functions[callee.name] || callee.name.toLowerCase();
         return `${oDataFunc}(${args})`;
     }
 
@@ -269,7 +269,7 @@ export class ODataQueryProvider implements IQueryProvider {
 
     valueToStr(value) {
         if (Object.prototype.toString.call(value) === '[object Date]')
-            return `"datetime'${value.toISOString()}'"`;
+            return `datetime'${value.toISOString()}'`;
 
         if (value == null)
             return 'null';
@@ -282,8 +282,10 @@ export class ODataQueryProvider implements IQueryProvider {
 
 function getBinaryOp(op: string) {
     switch (op) {
-        case '==': case '===': return 'eq';
-        case '!=': case '!==': return 'ne';
+        case '==':
+        case '===': return 'eq';
+        case '!=':
+        case '!==': return 'ne';
         case '>': return 'gt';
         case '>=': return 'ge';
         case '<': return 'lt';
@@ -306,15 +308,9 @@ function getUnaryOp(op) {
 }
 
 const functions = {
-    'endsWith': 'endswith',
-    'startsWith': 'startswith',
-    'indexOf': 'indexof',
-    'replace': 'replace',
     'substr': 'substring',
     'toLowerCase': 'tolower',
     'toUpperCase': 'toupper',
-    'trim': 'trim',
-    'concat': 'concat',
     'getDate': 'day',
     'getHours': 'hour',
     'getMinutes': 'minute',
