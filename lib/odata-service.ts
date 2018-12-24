@@ -1,4 +1,4 @@
-import { IAjaxProvider, QueryParameter, IRequestProvider, AjaxOptions, mergeAjaxOptions } from "jinqu";
+import { IAjaxProvider, QueryParameter, IRequestProvider, AjaxOptions, mergeAjaxOptions, InlineCountInfo } from "jinqu";
 import { FetchProvider } from 'jinqu-fetch';
 import { ODataQueryProvider } from "./odata-query-provider";
 
@@ -39,7 +39,17 @@ export class ODataService implements IRequestProvider<AjaxOptions>  {
             }
         }
 
-        return this.ajaxProvider.ajax(o);
+        return this.ajaxProvider.ajax(o)
+            .then(d => {
+                const result = d['value'];
+                const count = d['odata.count'];
+
+                if (result && count) {
+                    (result as InlineCountInfo).$inlineCount = Number(count);
+                }
+                
+                return result;
+            });
     }
 
     createQuery<T>(url: string) {
