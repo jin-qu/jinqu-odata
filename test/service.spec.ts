@@ -166,7 +166,10 @@ describe('Service tests', () => {
     });
 
     it('should handle expand with multi level', () => {
-        const query = service.companies().expand(c => c.addresses.$expand(a => a.city).country);
+        const query = service.companies()
+            .expand(c => c.addresses)
+                .thenExpand(a => a.city)
+                    .thenExpand(c => c.country);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -184,7 +187,8 @@ describe('Service tests', () => {
     });
 
     it('should handle expand with multi level using strings 2', () => {
-        const query = service.companies().expand('c => c.addresses.city.country');
+        const query = service.companies()
+            .expand('c => c.addresses.city.country');
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -193,7 +197,9 @@ describe('Service tests', () => {
     });
 
     it('should handle expand with multi level using strings 3', () => {
-        const query = service.companies().expand('c => c.addresses.$expand(a => a.city).country');
+        const query = service.companies()
+            .expand('c => c.addresses')
+                .thenExpand('a => a.city.country');
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -201,23 +207,24 @@ describe('Service tests', () => {
         expect(url).equal(expectedUrl);
     });
 
-    it('should handle expand with multi level with explicit calls', () => {
+    it('should handle expand with multi level with repeated calls', () => {
+        const query = service.companies()
+            .expand(c => c.addresses, c => c.city)
+            .expand(c => c.addresses)
+                .thenExpand(a => a.city.country)
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `api/Companies?$expand=${encodeURIComponent('addresses/city/country')}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it('should handle expand with multi level with repeated calls and selects', () => {
         const query = service.companies()
             .expand(c => c.addresses)
-            .expand(c => c.addresses.$expand(a => a.city))
-            .expand(c => c.addresses.$expand(a => a.city).country);
-        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
-
-        const url = provider.options.url;
-        const expectedUrl = `api/Companies?$expand=${encodeURIComponent('addresses/city/country')}`;
-        expect(url).equal(expectedUrl);
-    });
-
-    it('should handle expand with multi level with explicit calls and selects', () => {
-        const query = service.companies()
             .expand(c => c.addresses, a => a.city)
-            .expand(c => c.addresses.$expand(a => a.city), c => c.country)
-            .expand(c => c.addresses.$expand(a => a.city).country, c => c.name);
+                .thenExpand(a => a.city, c => c.country)
+                    .thenExpand(c => c.country, c => c.name);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -226,11 +233,10 @@ describe('Service tests', () => {
         expect(url).equal(expectedUrl);
     });
 
-    it('should handle expand with multi level with explicit calls and mixed selects', () => {
+    it('should handle expand with multi level with repeated calls and deep expands with selects', () => {
         const query = service.companies()
             .expand(c => c.addresses, a => a.city)
-            .expand(c => c.addresses.$expand(a => a.city))
-            .expand(c => c.addresses.$expand(a => a.city).country, c => c.name);
+                .thenExpand(a => a.city.country, c => c.name);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;

@@ -50,7 +50,7 @@ export class ODataQueryProvider implements IQueryProvider {
             else if (part.type === QueryFunc.inlineCount) {
                 inlineCount = part.args[0].literal !== false;
             }
-            else if (part.type === ODataFuncs.expand) {
+            else if (part.type === ODataFuncs.expand || part.type === ODataFuncs.thenExpand) {
                 expands.push(part);
             }
             else if (part.type === ODataFuncs.apply) {
@@ -70,19 +70,26 @@ export class ODataQueryProvider implements IQueryProvider {
 
         if (expands.length) {
             const es: ExpandCollection = {};
-
+            let ce: ExpandContainer;
             expands.forEach(e => {
-                const exp = this.handlePartArg(e.args[0]);
+                const exps = this.handlePartArg(e.args[0]).split('/');
                 const sel = e.args[1] ? this.handlePartArg(e.args[1]) : null;
 
-                const path = exp.split('/');
-                let ec = es[path[0]] || (es[path[0]] = { children: {} });
+                let col: ExpandCollection;
+                if (e.type === ODataFuncs.expand) {
+                    col = es;
+                }
+                else {
+                    if (!ce) throw new Error('"thenExpand" must be called after an "expand".');
 
-                path.slice(1).forEach(p => {
-                    ec = ec.children[p] || (ec.children[p] = { children: {} });
+                    col = ce.children;
+                }
+
+                exps.forEach(exp => {
+                    ce = col[exp] || (col[exp] = { children: {} });
+                    col = ce.children;
                 });
-
-                ec.select = sel;
+                ce.select = sel;
             });
 
             queryParams.push({ key: '$expand', value: walkExpands(es) });
@@ -232,9 +239,6 @@ export class ODataQueryProvider implements IQueryProvider {
 
         if (~aggregateFuncs.indexOf(member.name))
             return `${this.handleExp(exp.args[0], scopes)} with ${member.name}`;
-
-        if (member.name === '$expand')
-            return ownerStr + '/' + this.handleExp(exp.args[0], scopes);
 
         args = exp.args.map(a => this.expToStr(a, scopes, parameters)).join(',');
         // handle Math functions
