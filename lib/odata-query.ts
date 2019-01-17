@@ -25,11 +25,11 @@ export class ODataQuery<T> implements IODataQuery<T> {
     }
 
     orderBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T> {
-        return new OrderedODataQuery<T>(this.provider, [...this.parts, QueryPart.orderBy(keySelector, scopes)]);
+        return this.createOrderedQuery(QueryPart.orderBy(keySelector, scopes));
     }
 
     orderByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T> {
-        return new OrderedODataQuery<T>(this.provider, [...this.parts, QueryPart.orderByDescending(keySelector, scopes)]);
+        return this.createOrderedQuery(QueryPart.orderByDescending(keySelector, scopes));
     }
 
     expand<TNav>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<T, TNav> {
@@ -38,7 +38,7 @@ export class ODataQuery<T> implements IODataQuery<T> {
             args.push(PartArgument.identifier(selector, scopes));
         }
 
-        return new ExpandedODataQuery<T, TNav>(this.provider, [...this.parts, new QueryPart(ODataFuncs.expand, args, scopes)]);
+        return this.createExpandedQuery<TNav>(new QueryPart(ODataFuncs.expand, args, scopes));
     }
 
     skip(count: number): IODataQuery<T> {
@@ -70,22 +70,30 @@ export class ODataQuery<T> implements IODataQuery<T> {
     }
 
     toArrayAsync(): PromiseLike<T[] & InlineCountInfo> {
-        return this.provider.executeAsync([...this.parts, QueryPart.toArray()]);
+        return (<any>this.provider).executeAsync([...this.parts, QueryPart.toArray()]);
     }
 
     protected create<T>(part: IQueryPart): IODataQuery<T> {
-        return <any>this.provider.createQuery([...this.parts, part]);
+        return new ODataQuery<T>(this.provider, [...this.parts, part]);
+    }
+
+    protected createOrderedQuery(part: IQueryPart) {
+        return new OrderedODataQuery<T>(this.provider, [...this.parts, part]);
+    }
+
+    protected createExpandedQuery<TNav>(part: IQueryPart) {
+        return new ExpandedODataQuery<T, TNav>(this.provider, [...this.parts, part]);
     }
 }
 
 class OrderedODataQuery<T> extends ODataQuery<T> implements IOrderedODataQuery<T> {
 
     thenBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T> {
-        return <any>this.create(QueryPart.thenBy(keySelector, scopes));
+        return this.createOrderedQuery(QueryPart.thenBy(keySelector, scopes));
     }
 
     thenByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T> {
-        return <any>this.create(QueryPart.thenByDescending(keySelector, scopes));
+        return this.createOrderedQuery(QueryPart.thenByDescending(keySelector, scopes));
     }
 }
 
@@ -97,7 +105,7 @@ class ExpandedODataQuery<TEntity, TProperty> extends ODataQuery<TEntity> impleme
             args.push(PartArgument.identifier(selector, scopes));
         }
 
-        return new ExpandedODataQuery<TEntity, TNav>(this.provider, [...this.parts, new QueryPart(ODataFuncs.thenExpand, args, scopes)]);
+        return this.createExpandedQuery<TNav>(new QueryPart(ODataFuncs.thenExpand, args, scopes));
     }
 }
 
