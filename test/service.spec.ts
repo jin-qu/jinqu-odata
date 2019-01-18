@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import 'mocha';
 import chai = require('chai');
 import chaiAsPromised = require('chai-as-promised');
-import { CompanyService, MockRequestProvider, Company } from './fixture';
+import { CompanyService, MockRequestProvider, ICompany } from './fixture';
 import { ODataService } from '..';
 import { ODataQueryProvider } from '../lib/odata-query-provider';
 
@@ -48,21 +48,21 @@ describe('Service tests', () => {
 
     it('should handle base address', async () => {
         const svc1 = new ODataService('', provider);
-        const query1 = svc1.createQuery<Company>('Companies');
+        const query1 = svc1.createQuery<ICompany>('Companies');
         expect(query1.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url1 = provider.options.url;
         expect(url1).equal('Companies');
 
         const svc2 = new ODataService('api/', provider);
-        const query2 = svc2.createQuery<Company>('Companies');
+        const query2 = svc2.createQuery<ICompany>('Companies');
         expect(query2.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url2 = provider.options.url;
         expect(url2).equal('api/Companies');
 
         const svc3 = new ODataService('api/', provider);
-        const query3 = svc3.createQuery<Company>('');
+        const query3 = svc3.createQuery<ICompany>('');
         expect(query3.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url3 = provider.options.url;
@@ -161,7 +161,7 @@ describe('Service tests', () => {
         expect(query.select(c => ({ ID: c.id, NAME: c.name, STATE: c.deleted ? 'DELETED' : '' }))).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedUrl = `api/Companies?$select=${encodeURIComponent('id as ID,name as NAME,deleted ? "DELETED" : "" as STATE')}`;
+        const expectedUrl = `api/Companies?$select=${encodeURIComponent("id as ID,name as NAME,deleted ? 'DELETED' : '' as STATE")}`;
         expect(url).equal(expectedUrl);
     });
 
@@ -323,7 +323,7 @@ describe('Service tests', () => {
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedUrl = `api/Companies?$filter=${encodeURIComponent('substringof("flix", name)')}`;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent("substringof('flix', name)")}`;
         expect(url).equal(expectedUrl);
     });
 
@@ -332,7 +332,7 @@ describe('Service tests', () => {
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedUrl = `api/Companies?$filter=${encodeURIComponent('substring(name,0,2) eq "Ne"')}`;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent("substring(name,0,2) eq 'Ne'")}`;
         expect(url).equal(expectedUrl);
     });
 
@@ -341,7 +341,7 @@ describe('Service tests', () => {
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedUrl = `api/Companies?$filter=${encodeURIComponent('tolower(name) eq "netflix"')}`;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent("tolower(name) eq 'netflix'")}`;
         expect(url).equal(expectedUrl);
     });
 
@@ -350,7 +350,7 @@ describe('Service tests', () => {
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedUrl = `api/Companies?$filter=${encodeURIComponent('startswith(name,"Net")')}`;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent("startswith(name,'Net')")}`;
         expect(url).equal(expectedUrl);
     });
 
@@ -363,6 +363,10 @@ describe('Service tests', () => {
         const expectedPrm = `createDate lt datetime'${date.toISOString()}' and name ne null`;
         const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
         expect(url).equal(expectedUrl);
+    });
+
+    it('should handle cast', async () => {
+        
     });
 
     it('should handle other operators', async () => {

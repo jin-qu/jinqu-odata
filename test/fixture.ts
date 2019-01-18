@@ -29,7 +29,7 @@ export class Address {
     city: City;
 }
 
-export interface Company {
+export interface ICompany {
     id: number;
     name: string;
     deleted: boolean;
@@ -44,6 +44,6 @@ export class CompanyService extends ODataService {
     }
 
     companies() {
-        return this.createQuery<Company>('Companies');
+        return this.createQuery<ICompany>('Companies');
     }
 }
