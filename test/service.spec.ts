@@ -325,7 +325,7 @@ describe('Service tests', () => {
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedUrl = `api/Companies?$filter=${encodeURIComponent("substringof('flix', name)")}`;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent("contains(name,'flix')")}`;
         expect(url).equal(expectedUrl);
     });
 

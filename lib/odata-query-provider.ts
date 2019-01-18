@@ -252,9 +252,6 @@ export class ODataQueryProvider implements IQueryProvider {
         // handle Math functions
         if (~mathFuncs.indexOf(callee.name) && ownerStr === 'Math')
             return `${callee.name}(${args})`;
-        // substringof is the only function where owner is the second parameter
-        if (callee.name === 'includes')
-            return `substringof(${args}, ${ownerStr})`;
         // any and all are the only functions which can be called on owner
         if (callee.name === 'any' || callee.name === 'all')
             return `${ownerStr}/${callee.name}(${args})`;
@@ -315,6 +312,7 @@ function getUnaryOp(op) {
 }
 
 const functions = {
+    'includes': 'contains',
     'substr': 'substring',
     'toLowerCase': 'tolower',
     'toUpperCase': 'toupper',
