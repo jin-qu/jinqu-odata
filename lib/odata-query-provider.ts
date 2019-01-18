@@ -1,3 +1,4 @@
+import { plainToClass } from 'class-transformer';
 import {
     ExpressionType, Expression,
     LiteralExpression, VariableExpression, UnaryExpression,
@@ -7,8 +8,8 @@ import {
 } from 'jokenizer';
 import { 
     IQueryPart, IRequestProvider, QueryFunc, AjaxFuncs, 
-    AjaxOptions, IQueryProvider, QueryParameter, IPartArgument, PartArgument 
-} from "jinqu";
+    AjaxOptions, IQueryProvider, QueryParameter, IPartArgument, PartArgument, Ctor 
+} from 'jinqu';
 import { ODataQuery, ODataFuncs } from './odata-query';
 
 const orderFuncs = [QueryFunc.orderBy, QueryFunc.orderByDescending];
@@ -40,11 +41,15 @@ export class ODataQueryProvider implements IQueryProvider {
         let inlineCount = false,
             orders: IQueryPart[] = [],
             expands: IQueryPart[] = [],
-            apply: IQueryPart;
+            apply: IQueryPart,
+            ctor: Ctor<any>;
 
         for (let part of parts) {
             if (part.type === AjaxFuncs.options) {
                 options.push(part.args[0].literal);
+            }
+            else if (part.type === QueryFunc.cast) {
+                ctor = part.args[0].literal;
             }
             else if (part.type === QueryFunc.toArray || part.type === QueryFunc.first || part.type === QueryFunc.single) continue;
             else if (part.type === QueryFunc.inlineCount) {
@@ -123,7 +128,10 @@ export class ODataQueryProvider implements IQueryProvider {
             }
         }
 
-        return this.requestProvider.request<TResult>(queryParams, options);
+        const promise = this.requestProvider.request<TResult>(queryParams, options);
+        return ctor
+            ? promise.then(d => plainToClass(ctor, d))
+            : promise;
     }
 
     handlePartArg(arg: IPartArgument): string {

@@ -1,6 +1,7 @@
-import { IAjaxProvider, QueryParameter, IRequestProvider, AjaxOptions, mergeAjaxOptions, InlineCountInfo } from "jinqu";
+import { IAjaxProvider, QueryParameter, IRequestProvider, AjaxOptions, mergeAjaxOptions, InlineCountInfo, Ctor } from "jinqu";
 import { FetchProvider } from 'jinqu-fetch';
 import { ODataQueryProvider } from "./odata-query-provider";
+import { ODataQuery } from "./odata-query";
 
 export class ODataService implements IRequestProvider<AjaxOptions>  {
 
@@ -52,7 +53,8 @@ export class ODataService implements IRequestProvider<AjaxOptions>  {
             });
     }
 
-    createQuery<T>(url: string) {
-        return new ODataQueryProvider(this).createQuery<T>().withOptions({ url });
+    createQuery<T>(url: string, ctor?: Ctor<T>): ODataQuery<T> {
+        const query = new ODataQueryProvider(this).createQuery<T>().withOptions({ url });
+        return ctor ? <ODataQuery<T>>query.cast(ctor) : query;
     }
 }

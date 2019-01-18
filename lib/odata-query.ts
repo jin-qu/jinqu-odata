@@ -1,11 +1,11 @@
 import {
     IQueryProvider, IQueryPart, Predicate, Func1, IQueryBase,
-    InlineCountInfo, QueryPart, PartArgument, AjaxOptions, AjaxFuncs, QueryFunc, IOrderedQuery, Query
+    InlineCountInfo, QueryPart, PartArgument, AjaxOptions, AjaxFuncs, QueryFunc, IOrderedQuery, Query, Ctor
 } from "jinqu";
 
 export class ODataQuery<T> implements IODataQuery<T> {
 
-    constructor(public readonly provider: IQueryProvider, public readonly parts: IQueryPart[] = []) {
+    constructor(public readonly provider: IQueryProvider, public readonly parts: IQueryPart[] = [], protected readonly ctor?: Ctor<T>) {
     }
 
     withOptions(options: AjaxOptions): ODataQuery<T> {
@@ -49,28 +49,39 @@ export class ODataQuery<T> implements IODataQuery<T> {
         return this.create(QueryPart.take(count));
     }
 
-    select<TResult = any>(selector: Func1<T, TResult>, ...scopes): PromiseLike<TResult[] & InlineCountInfo> {
-        return this.provider.executeAsync([...this.parts, QueryPart.select(selector, scopes)]);
+    select<TResult = any>(selector: Func1<T, TResult>, ...scopes);
+    select<TResult = any>(selector: Func1<T, TResult>, ctor: Ctor<T>, ...scopes): PromiseLike<TResult[] & InlineCountInfo> {
+        const [q, s] = this.fixCtorArg(ctor, scopes);
+
+        return q.provider.executeAsync([...q.parts, QueryPart.select(selector, s)]);
     }
 
+    groupBy<TKey extends object, TResult extends object>(keySelector: Func1<T, TKey>, elementSelector?: Func1<Array<T> & TKey, TResult>, ...scopes: any[]);
     groupBy<TKey extends object, TResult extends object>(
-        keySelector: Func1<T, TKey>,
-        elementSelector?: Func1<Array<T> & TKey, TResult>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo> {
-            
-        const args = [new PartArgument(keySelector, null, scopes)];
+        keySelector: Func1<T, TKey>, elementSelector?: Func1<Array<T> & TKey, TResult>,
+        ctor?: Ctor<TResult>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo> {
+
+        const [q, s] = this.fixCtorArg(ctor, scopes);
+
+        const args = [new PartArgument(keySelector, null, s)];
         if (elementSelector) {
-            args.push(new PartArgument(elementSelector, null, scopes));
+            args.push(new PartArgument(elementSelector, null, s));
         }
         const part = new QueryPart(ODataFuncs.apply, args);
-        return <any>this.provider.executeAsync([...this.parts, part]);
+        return <any>q.provider.executeAsync([...q.parts, part]);
     }
 
     count(predicate?: Predicate<T>, ...scopes) {
         return this.provider.executeAsync([...this.parts, QueryPart.count(predicate, scopes)]);
     }
 
-    toArrayAsync(): PromiseLike<T[] & InlineCountInfo> {
-        return (<any>this.provider).executeAsync([...this.parts, QueryPart.toArray()]);
+    cast(ctor: Ctor<T>) {
+        return this.create<T>(QueryPart.cast(ctor));
+    }
+
+    toArrayAsync(ctor?: Ctor<T>): PromiseLike<T[] & InlineCountInfo> {
+        const query = ctor ? this.cast(ctor) : this;
+        return (<any>query.provider).executeAsync([...query.parts, QueryPart.toArray()]);
     }
 
     protected create<T>(part: IQueryPart): IODataQuery<T> {
@@ -83,6 +94,15 @@ export class ODataQuery<T> implements IODataQuery<T> {
 
     protected createExpandedQuery<TNav>(part: IQueryPart) {
         return new ExpandedODataQuery<T, TNav>(this.provider, [...this.parts, part]);
+    }
+
+    protected fixCtorArg(ctor: Ctor<any>, scopes: any[]): [IODataQuery<T>, any[]] {
+        if (ctor && typeof ctor !== 'function') {
+            scopes = [ctor, ...scopes];
+            ctor = null;
+        }
+
+        return [ctor ? this.cast(ctor) : this, scopes]
     }
 }
 
@@ -117,11 +137,16 @@ export interface IODataQuery<T> extends IQueryBase {
     expand<TNav>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<T, TNav>;
     skip(count: number): IODataQuery<T>;
     top(count: number): IODataQuery<T>;
+    cast(ctor: Ctor<T>): IODataQuery<T>;
 
     select<TResult = any>(selector: Func1<T, TResult>, ...scopes): PromiseLike<TResult[] & InlineCountInfo>;
-    groupBy<TKey extends object, TResult extends object>(keySelector: Func1<T, TKey>, elementSelector?: Func1<Array<T> & TKey, TResult>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo>;
+    select<TResult = any>(selector: Func1<T, TResult>, ctor: Ctor<T>, ...scopes): PromiseLike<TResult[] & InlineCountInfo>;
+    groupBy<TKey extends object, TResult extends object>(keySelector: Func1<T, TKey>, 
+        elementSelector?: Func1<Array<T> & TKey, TResult>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo>;
+    groupBy<TKey extends object, TResult extends object>(keySelector: Func1<T, TKey>, 
+        elementSelector?: Func1<Array<T> & TKey, TResult>, ctor?: Ctor<T>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo>;
     count(predicate?: Predicate<T>, ...scopes): PromiseLike<T[] & InlineCountInfo>;
-    toArrayAsync(): PromiseLike<T[] & InlineCountInfo>;
+    toArrayAsync(ctor?: Ctor<T>): PromiseLike<T[] & InlineCountInfo>;
 }
 
 export interface IOrderedODataQuery<T> extends IODataQuery<T> {
