@@ -326,10 +326,20 @@ function walkExpands(e: ExpandCollection) {
     for (const p in e) {
         const exp = e[p];
         let childStr = walkExpands(exp.children);
-        const expStr = exp.select
-            ? `${p}(${childStr ? `$expand=${childStr},` : ''}$select=${exp.select})`
-            : childStr ? `${p}/${childStr}` : p;
+
+        const subStrs = [];
+        if (childStr) {
+            subStrs.push(`$expand=${childStr}`);
+        }
+        if (exp.select) {
+            subStrs.push(`$select=${exp.select}`);
+        }
+        
+        const expStr = subStrs.length
+            ? `${p}(${subStrs.join(',')})`
+            : p;
         expStrs.push(expStr);
     }
+    
     return expStrs.join(',');
 }
