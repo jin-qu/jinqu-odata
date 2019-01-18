@@ -281,7 +281,7 @@ export class ODataQueryProvider implements IQueryProvider {
         if (value == null)
             return 'null';
         if (typeof value === 'string')
-            return `"${value.replace(/"/g, '""')}"`;
+            return `'${value.replace(/'/g, "''")}'`;
 
         return value;
     }
