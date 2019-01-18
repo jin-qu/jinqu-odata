@@ -42,8 +42,8 @@ export class ODataService implements IRequestProvider<AjaxOptions>  {
 
         return this.ajaxProvider.ajax(o)
             .then(d => {
-                const result = d['value'];
-                const count = d['odata.count'];
+                const result = (d && d['value']) || d;
+                const count = d && d['odata.count'];
 
                 if (result && count) {
                     (result as InlineCountInfo).$inlineCount = Number(count);

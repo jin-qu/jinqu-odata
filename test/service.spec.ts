@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import 'mocha';
 import chai = require('chai');
 import chaiAsPromised = require('chai-as-promised');
-import { CompanyService, MockRequestProvider, ICompany } from './fixture';
+import { CompanyService, MockRequestProvider, ICompany, Company, getCompanies } from './fixture';
 import { ODataService } from '..';
 import { ODataQueryProvider } from '../lib/odata-query-provider';
 
@@ -148,11 +148,13 @@ describe('Service tests', () => {
     });
 
     it('should handle select', () => {
-        const query = service.companies();
-        expect(query.select(c => ({ ID: c.id, NAME: c.name, count: c.addresses.count() }))).to.be.fulfilled.and.eventually.be.null;
+        const token = 'abc';
+        const query = service.companies()
+            .select(c => ({ ID: c.id, NAME: c.name, token: token, count: c.addresses.count() }), { token });
+        expect(query).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedUrl = `api/Companies?$select=${encodeURIComponent('id as ID,name as NAME,addresses/$count as count')}`;
+        const expectedUrl = `api/Companies?$select=${encodeURIComponent("id as ID,name as NAME,'abc' as token,addresses/$count as count")}`;
         expect(url).equal(expectedUrl);
     });
 
@@ -365,10 +367,6 @@ describe('Service tests', () => {
         expect(url).equal(expectedUrl);
     });
 
-    it('should handle cast', async () => {
-        
-    });
-
     it('should handle other operators', async () => {
         const query = service.companies().where(c => ((c.id + 4 - 2) * 4 / 2) % 2 == 1 && c.id != 42 && -c.id !== 19);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
@@ -377,5 +375,39 @@ describe('Service tests', () => {
         const expectedPrm = '((id add 4 sub 2) mul 4 div 2) mod 2 eq 1 and id ne 42 and -id ne 19';
         const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
         expect(url).equal(expectedUrl);
+    });
+
+    it('should handle cast 1', async () => {
+        const prv = new MockRequestProvider(getCompanies());
+        const svc = new ODataService('api', prv);
+        const result = await svc.createQuery<ICompany>('companies').cast(Company).toArrayAsync();
+
+        result.forEach(r => expect(r).to.be.instanceOf(Company));
+    });
+
+    it('should handle cast 2', async () => {
+        const prv = new MockRequestProvider(getCompanies());
+        const svc = new ODataService('api', prv);
+        const result = await svc.createQuery<ICompany>('companies', Company).toArrayAsync();
+
+        result.forEach(r => expect(r).to.be.instanceOf(Company));
+    });
+
+    it('should handle cast 3', async () => {
+        const prv = new MockRequestProvider({ value: getCompanies() });
+        const svc = new ODataService('api', prv);
+        const result = await svc.createQuery<ICompany>('companies').toArrayAsync(Company);
+
+        result.forEach(r => expect(r).to.be.instanceOf(Company));
+    });
+
+    it('should handle cast 4', async () => {
+        const data = getCompanies().map(c => ({ company: c }));
+        const prv = new MockRequestProvider(data);
+        const svc = new ODataService('api', prv);
+        const query = svc.createQuery<{ company: ICompany }>('companies');
+        const result = await query.select<ICompany>(d => d.company, Company);
+
+        result.forEach(r => expect(r).to.be.instanceOf(Company));
     });
 });

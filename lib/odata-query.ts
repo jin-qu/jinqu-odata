@@ -49,14 +49,15 @@ export class ODataQuery<T> implements IODataQuery<T> {
         return this.create(QueryPart.take(count));
     }
 
-    select<TResult = any>(selector: Func1<T, TResult>, ...scopes);
+    select<TResult = any>(selector: Func1<T, TResult>, ...scopes): PromiseLike<TResult[] & InlineCountInfo>;
     select<TResult = any>(selector: Func1<T, TResult>, ctor: Ctor<T>, ...scopes): PromiseLike<TResult[] & InlineCountInfo> {
         const [q, s] = this.fixCtorArg(ctor, scopes);
 
         return q.provider.executeAsync([...q.parts, QueryPart.select(selector, s)]);
     }
 
-    groupBy<TKey extends object, TResult extends object>(keySelector: Func1<T, TKey>, elementSelector?: Func1<Array<T> & TKey, TResult>, ...scopes: any[]);
+    groupBy<TKey extends object, TResult extends object>(keySelector: Func1<T, TKey>, 
+        elementSelector?: Func1<Array<T> & TKey, TResult>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo>;
     groupBy<TKey extends object, TResult extends object>(
         keySelector: Func1<T, TKey>, elementSelector?: Func1<Array<T> & TKey, TResult>,
         ctor?: Ctor<TResult>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo> {
