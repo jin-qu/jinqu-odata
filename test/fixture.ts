@@ -1,5 +1,6 @@
 import { AjaxOptions, IAjaxProvider } from 'jinqu';
 import { ODataService } from '..';
+import { oDataResource } from '../lib/decorators';
 
 export class MockRequestProvider implements IAjaxProvider {
 
@@ -14,6 +15,10 @@ export class MockRequestProvider implements IAjaxProvider {
     }
 }
 
+export interface ICountry {
+    name: string;
+}
+
 export class Country {
     name: string;
 }
@@ -23,6 +28,7 @@ export class City {
     country: Country;
 }
 
+@oDataResource('Addresses')
 export class Address {
     id: number;
     text: string;
@@ -37,6 +43,8 @@ export interface ICompany {
     addresses: Address[];
 }
 
+@oDataResource('Company')
+@oDataResource('Companies') // this should override
 export class Company implements ICompany {
     id: number;
     name: string;
@@ -54,6 +62,13 @@ export class CompanyService extends ODataService {
     companies() {
         return this.createQuery<ICompany>('Companies');
     }
+}
+
+export function getCountries(): ICountry[] {
+    return [
+        { name: 'Uganda' },
+        { name: 'Nauru' }
+    ];
 }
 
 export function getCompanies(): ICompany[] {

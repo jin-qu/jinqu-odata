@@ -2,6 +2,7 @@ import { IAjaxProvider, QueryParameter, IRequestProvider, AjaxOptions, mergeAjax
 import { FetchProvider } from 'jinqu-fetch';
 import { ODataQueryProvider } from "./odata-query-provider";
 import { ODataQuery } from "./odata-query";
+import { getResource } from "./decorators";
 
 export class ODataService implements IRequestProvider<AjaxOptions>  {
 
@@ -53,8 +54,19 @@ export class ODataService implements IRequestProvider<AjaxOptions>  {
             });
     }
 
-    createQuery<T>(url: string, ctor?: Ctor<T>): ODataQuery<T> {
-        const query = new ODataQueryProvider(this).createQuery<T>().withOptions({ url });
+    createQuery<T>(resource: string): ODataQuery<T>;
+    createQuery<T>(resource: string, ctor: Ctor<T>): ODataQuery<T>;
+    createQuery<T>(ctor: Ctor<T>): ODataQuery<T>;
+    createQuery<T>(resource: string | Ctor<T>, ctor?: Ctor<T>): ODataQuery<T> {
+        if (typeof resource === 'function') {
+            ctor = resource;
+            resource = getResource(ctor);
+            if (!resource) {
+                const r = /class (.*?)\s|\{|function (.*?)[\s|\(]/.exec(ctor.toString());
+                resource = r[1] || r[2];
+            }
+        }
+        const query = new ODataQueryProvider(this).createQuery<T>().withOptions({ url: resource });
         return ctor ? <ODataQuery<T>>query.cast(ctor) : query;
     }
 }
