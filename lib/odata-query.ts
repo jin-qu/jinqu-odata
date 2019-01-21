@@ -5,7 +5,7 @@ import {
 
 export class ODataQuery<T> implements IODataQuery<T> {
 
-    constructor(public readonly provider: IQueryProvider, public readonly parts: IQueryPart[] = [], protected readonly ctor?: Ctor<T>) {
+    constructor(public readonly provider: IQueryProvider, public readonly parts: IQueryPart[] = []) {
     }
 
     withOptions(options: AjaxOptions): ODataQuery<T> {
@@ -32,7 +32,7 @@ export class ODataQuery<T> implements IODataQuery<T> {
         return this.createOrderedQuery(QueryPart.orderByDescending(keySelector, scopes));
     }
 
-    expand<TNav>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<T, TNav> {
+    expand<TNav extends Object>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<T, TNav> {
         const args = [PartArgument.identifier(navigationSelector, scopes)];
         if (selector) {
             args.push(PartArgument.identifier(selector, scopes));
@@ -49,8 +49,8 @@ export class ODataQuery<T> implements IODataQuery<T> {
         return this.create(QueryPart.take(count));
     }
 
-    select<TResult = any>(selector: Func1<T, TResult>, ...scopes): PromiseLike<TResult[] & InlineCountInfo>;
-    select<TResult = any>(selector: Func1<T, TResult>, ctor: Ctor<T>, ...scopes): PromiseLike<TResult[] & InlineCountInfo> {
+    select<TResult extends object>(selector: Func1<T, TResult>, ...scopes): PromiseLike<TResult[] & InlineCountInfo>;
+    select<TResult extends object>(selector: Func1<T, TResult>, ctor: Ctor<T>, ...scopes): PromiseLike<TResult[] & InlineCountInfo> {
         const [q, s] = this.fixCtorArg(ctor, scopes);
 
         return q.provider.executeAsync([...q.parts, QueryPart.select(selector, s)]);
@@ -93,7 +93,7 @@ export class ODataQuery<T> implements IODataQuery<T> {
         return new OrderedODataQuery<T>(this.provider, [...this.parts, part]);
     }
 
-    protected createExpandedQuery<TNav>(part: IQueryPart) {
+    protected createExpandedQuery<TNav extends Object>(part: IQueryPart) {
         return new ExpandedODataQuery<T, TNav>(this.provider, [...this.parts, part]);
     }
 
@@ -120,7 +120,7 @@ class OrderedODataQuery<T> extends ODataQuery<T> implements IOrderedODataQuery<T
 
 class ExpandedODataQuery<TEntity, TProperty> extends ODataQuery<TEntity> implements IExpandedODataQuery<TEntity, TProperty> {
 
-    thenExpand<TNav>(navigationSelector: Func1<TProperty, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<TEntity, TNav> {
+    thenExpand<TNav extends Object>(navigationSelector: Func1<TProperty, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<TEntity, TNav> {
         const args = [PartArgument.identifier(navigationSelector, scopes)];
         if (selector) {
             args.push(PartArgument.identifier(selector, scopes));
@@ -135,7 +135,7 @@ export interface IODataQuery<T> extends IQueryBase {
     where(predicate: Predicate<T>, ...scopes): IODataQuery<T>;
     orderBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
     orderByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
-    expand<TNav>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<T, TNav>;
+    expand<TNav extends Object>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<T, TNav>;
     skip(count: number): IODataQuery<T>;
     top(count: number): IODataQuery<T>;
     cast(ctor: Ctor<T>): IODataQuery<T>;
@@ -156,7 +156,7 @@ export interface IOrderedODataQuery<T> extends IODataQuery<T> {
 }
 
 export interface IExpandedODataQuery<TEntity, TProperty> extends IODataQuery<TEntity> {
-    thenExpand<TNav>(navigationSelector: Func1<TProperty, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<TEntity, TNav>;
+    thenExpand<TNav extends Object>(navigationSelector: Func1<TProperty, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<TEntity, TNav>;
 }
 
 export const ODataFuncs = {
