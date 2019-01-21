@@ -36,7 +36,7 @@ const service = new ODataService ("https://www.solenya.org/odata")
 
 const books = await service
     .createQuery(Book)
-    .where(b => b.Price > 60) 
+    .filter(b => b.Price > 60) 
     .toArrayAsync()
 
 for (var b of books)
@@ -77,11 +77,11 @@ jinqu-odata translates LINQ queries to OData Version 4 query strings. In the qur
 
 ### Filter
 
-To filter results we use the `where` operator:
+To filter results we use the `filter` operator:
 
 ```typescript
 const result = await query
-    .where(c => c.name.startsWith('Net'))
+    .filter(c => c.name.startsWith('Net'))
     .toArrayAsync()
 
 // odata/Companies?$filter=startsWith(name, "Net")
