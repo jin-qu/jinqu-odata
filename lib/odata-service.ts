@@ -21,18 +21,25 @@ export class ODataService implements IRequestProvider<AjaxOptions>  {
             o.url = this.baseAddress + (o.url || '');
         }
 
+        let countPrm: QueryParameter = null;
+        o.params = o.params || [];
         params = params || [];
-        const countPrm = params.find(p => p.key === '$count');
-        if (countPrm) {
-            params = params.filter(p => p !== countPrm);
-        }
+        params.forEach(p => {
+            if (p.key === '$inlinecount') {
+                o.params.push({ key: '$count', value: 'true' });
+            }
+            else if (p.key === '$count') {
+                countPrm = p;
+            }
+            else {
+                o.params.push(p);
+            }
+        });
 
-        params = params.concat(o.params || []);
+        if (o.params.length) {
+            o.url += '?' + o.params.map(p => `${p.key}=${encodeURIComponent(p.value)}`).join('&');
+        }
         o.params = [];
-
-        if (params.length) {
-            o.url += '?' + params.map(p => `${p.key}=${encodeURIComponent(p.value)}`).join('&');
-        }
 
         if (countPrm) {
             o.url += '/$count';

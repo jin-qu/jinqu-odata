@@ -29,12 +29,12 @@ describe('Service tests', () => {
     });
 
     it('should throw for unsupported expression', async () => {
-        const query = service.companies().where(c => c.name[1] === 'a');
+        const query = service.companies().filter(c => c.name[1] === 'a');
         expect(() => query.toArrayAsync()).to.throw();
     });
 
     it('should throw for invalid callee', () => {
-        const query = service.companies().where('c => c.id.toString()() == 1');
+        const query = service.companies().filter('c => c.id.toString()() == 1');
         expect(() => query.toArrayAsync()).to.throw();
     });
 
@@ -101,7 +101,7 @@ describe('Service tests', () => {
         const query1 = new CompanyService(prv1).companies().inlineCount();
         const response1 = await query1.toArrayAsync();
         const url1 = prv1.options.url;
-        const expectedUrl1 = `api/Companies?$inlinecount=allpages`;
+        const expectedUrl1 = `api/Companies?$count=true`;
         expect(url1).equal(expectedUrl1);
         expect(response1).eq(value1);
         expect(response1.$inlineCount).eq(100);
@@ -111,8 +111,8 @@ describe('Service tests', () => {
         const prv2 = new MockRequestProvider(result2);
         const query2 = new CompanyService(prv2).companies().inlineCount();
         const response2 = await query2.toArrayAsync();
-        const url2 = prv1.options.url;
-        const expectedUrl2 = `api/Companies?$inlinecount=allpages`;
+        const url2 = prv2.options.url;
+        const expectedUrl2 = `api/Companies?$count=true`;
         expect(url2).equal(expectedUrl2);
         expect(response2).eq(value2);
         expect(response2.$inlineCount).is.undefined;
@@ -120,7 +120,7 @@ describe('Service tests', () => {
 
     it('should handle filter parameter', async () => {
         const query = service.companies()
-            .where(c => c.id === 4 && (!c.addresses.any(a => a.id > 1000) || c.addresses.all(a => a.id >= 1000)));
+            .filter(c => c.id === 4 && (!c.addresses.any(a => a.id > 1000) || c.addresses.all(a => a.id >= 1000)));
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -303,7 +303,7 @@ describe('Service tests', () => {
     });
 
     it('should handle length', async () => {
-        const query = service.companies().where(c => c.name.length < 5);
+        const query = service.companies().filter(c => c.name.length < 5);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -312,7 +312,7 @@ describe('Service tests', () => {
     });
 
     it('should handle round function', async () => {
-        const query = service.companies().where(c => Math.round(c.id) <= 5);
+        const query = service.companies().filter(c => Math.round(c.id) <= 5);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -321,7 +321,7 @@ describe('Service tests', () => {
     });
 
     it('should handle substringof function', async () => {
-        const query = service.companies().where(c => c.name.includes('flix'));
+        const query = service.companies().filter(c => c.name.includes('flix'));
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -330,7 +330,7 @@ describe('Service tests', () => {
     });
 
     it('should handle substr function', async () => {
-        const query = service.companies().where(c => c.name.substr(0, 2) == 'Ne');
+        const query = service.companies().filter(c => c.name.substr(0, 2) == 'Ne');
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -339,7 +339,7 @@ describe('Service tests', () => {
     });
 
     it('should handle lower function', async () => {
-        const query = service.companies().where(c => c.name.toLowerCase() === 'netflix');
+        const query = service.companies().filter(c => c.name.toLowerCase() === 'netflix');
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -348,7 +348,7 @@ describe('Service tests', () => {
     });
 
     it('should handle startsWith function', async () => {
-        const query = service.companies().where(c => c.name.startsWith('Net'));
+        const query = service.companies().filter(c => c.name.startsWith('Net'));
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -358,7 +358,7 @@ describe('Service tests', () => {
 
     it('should handle date', async () => {
         const date = new Date(1592, 2, 14);
-        const query = service.companies().where(c => c.createDate < date && c.name != null, { date });
+        const query = service.companies().filter(c => c.createDate < date && c.name != null, { date });
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -368,7 +368,7 @@ describe('Service tests', () => {
     });
 
     it('should handle other operators', async () => {
-        const query = service.companies().where(c => ((c.id + 4 - 2) * 4 / 2) % 2 == 1 && c.id != 42 && -c.id !== 19);
+        const query = service.companies().filter(c => ((c.id + 4 - 2) * 4 / 2) % 2 == 1 && c.id != 42 && -c.id !== 19);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;

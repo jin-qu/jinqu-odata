@@ -15,7 +15,7 @@ import { ODataQuery, ODataFuncs } from './odata-query';
 const orderFuncs = [QueryFunc.orderBy, QueryFunc.orderByDescending];
 const thenFuncs = [QueryFunc.thenBy, QueryFunc.thenByDescending];
 const descFuncs = [QueryFunc.orderByDescending, QueryFunc.thenByDescending];
-const otherFuncs = [QueryFunc.inlineCount, QueryFunc.where, QueryFunc.select, QueryFunc.skip, QueryFunc.take, QueryFunc.count];
+const otherFuncs = [QueryFunc.inlineCount, QueryFunc.select, QueryFunc.skip, QueryFunc.count, ODataFuncs.filter, ODataFuncs.top];
 const mathFuncs = ['round', 'floor', 'ceiling'];
 const aggregateFuncs = ['sum', 'max', 'min'];
 
@@ -109,12 +109,11 @@ export class ODataQueryProvider implements IQueryProvider {
         }
 
         if (inlineCount) {
-            queryParams.push({ key: '$inlinecount', value: 'allpages' });
+            queryParams.push({ key: '$inlinecount', value: 'true' });
         }
 
         for (var p in params) {
-            const prmName = p.replace('where', 'filter').replace('take', 'top');
-            queryParams.push({ key: '$' + prmName, value: this.handlePartArg(params[p]) });
+            queryParams.push({ key: '$' + p, value: this.handlePartArg(params[p]) });
         }
 
         if (apply) {
