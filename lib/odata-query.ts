@@ -20,8 +20,9 @@ export class ODataQuery<T> implements IODataQuery<T> {
         return this.create(QueryPart.inlineCount(value));
     }
 
-    where(predicate: Predicate<T>, ...scopes): IODataQuery<T> {
-        return this.create(QueryPart.where(predicate, scopes));
+    filter(predicate: Predicate<T>, ...scopes): IODataQuery<T> {
+        const part = new QueryPart(ODataFuncs.filter, [PartArgument.identifier(predicate, scopes)]);
+        return this.create(part);
     }
 
     orderBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T> {
@@ -46,7 +47,8 @@ export class ODataQuery<T> implements IODataQuery<T> {
     }
 
     top(count: number): IODataQuery<T> {
-        return this.create(QueryPart.take(count));
+        const part = new QueryPart(ODataFuncs.top, [PartArgument.literal(count)]);
+        return this.create(part);
     }
 
     select<TResult extends object>(selector: Func1<T, TResult>, ...scopes): PromiseLike<TResult[] & InlineCountInfo>;
@@ -132,7 +134,7 @@ class ExpandedODataQuery<TEntity, TProperty> extends ODataQuery<TEntity> impleme
 
 export interface IODataQuery<T> extends IQueryBase {
     inlineCount(value?: boolean): IODataQuery<T>;
-    where(predicate: Predicate<T>, ...scopes): IODataQuery<T>;
+    filter(predicate: Predicate<T>, ...scopes): IODataQuery<T>;
     orderBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
     orderByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
     expand<TNav extends Object>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<T, TNav>;
@@ -160,6 +162,8 @@ export interface IExpandedODataQuery<TEntity, TProperty> extends IODataQuery<TEn
 }
 
 export const ODataFuncs = {
+    filter: 'filter',
+    top: 'top',
     expand: 'expand',
     thenExpand: 'thenExpand',
     apply: 'apply'
