@@ -43,8 +43,8 @@ export interface ICompany {
     addresses: Address[];
 }
 
-@oDataResource('Company')
 @oDataResource('Companies') // this should override
+@oDataResource('Company')
 export class Company implements ICompany {
     id: number;
     name: string;
