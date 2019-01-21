@@ -1,62 +1,90 @@
-# jinqu-odata - Jinqu OData implementation
+# jinqu-odata - Javascript-Linq to Odata
 
 [![Build Status](https://travis-ci.org/jin-qu/jinqu-odata.svg?branch=master)](https://travis-ci.org/jin-qu/jinqu-odata)
 [![Coverage Status](https://coveralls.io/repos/github/jin-qu/jinqu-odata/badge.svg?branch=master)](https://coveralls.io/github/jin-qu/jinqu-odata?branch=master)	
 [![npm version](https://badge.fury.io/js/jinqu-odata.svg)](https://badge.fury.io/js/jinqu-odata)
 <a href="https://snyk.io/test/npm/jinqu-odata"><img src="https://snyk.io/test/npm/jinqu-odata/badge.svg" alt="Known Vulnerabilities" data-canonical-src="https://snyk.io/test/npm/jinqu-odata" style="max-width:100%;"></a>
 
-Written completely in TypeScript.
+Jinqu-odata lets you write LINQ queries against an odata source. For those who don't know LINQ, the benefits are:
+
+ * A unified query language, whether querying local arrays, odata sources, or any other remote data source
+ * Static typing where Typescript can verify your query is sound
+
+jinqu-odata is dependent on the [jinqu](https://github.com/jin-qu/jinqu) package.
 
 ## Installation
 
-```shell
-npm i jinqu-odata
+```
+npm install jinqu-odata
 ```
 
 ## Usage
 
-We can create a service class for our OData endpoint, or use ODataService directly.
+First, we need classes that map to our odata resources. For example:
 
-* Creating a service type:
+```typescript
+@oDataResource('Books')
+export class Book {
+    Id: number
+    Title: string
+}
+```
+We can now query filtered books as follows:
+
+```typescript
+const service = new ODataService ("https://www.solenya.org/odata")
+
+const books = await service
+    .createQuery(Book)
+    .where(b => b.Price > 60) 
+    .toArrayAsync()
+
+for (var b of books)
+    console.log (b)
+```
+You can play with the live sample [here](https://stackblitz.com/edit/jinqu)
+
+The query is translated to the following odata url:
+```
+https://www.solenya.org/odata/Books?$filter=Price gt 60
+```
+
+## Inheriting from ODataService
+
+A common pattern is to inherit from `ODataService` to provide stubs for your odata resources as follows:
 
 ```typescript
 export class CompanyService extends ODataService {
 
-    constructor(provider?: IAjaxProvider) {
-        super('odata');
+    constructor (provider?: IAjaxProvider) {
+        super('odata')
     }
 
     companies() {
-        return this.createQuery<Company>('Companies');
+        return this.createQuery(Company)
     }
 }
-
-const service = new CompanyService();
-const data = await service.companies().toArrayAsync();
 ```
+## Code Generation
 
-**companies** method will create a query against ***odata/companies*** resource.
-With the code above, we are loading all **Company** resources.
+Currently we don't have code generators for jinqu-odata. However, we're actively considering this feature and it's tracked by this github issue:
 
-You can use [jinqu Swagger CodeGen](https://github.com/jin-qu/swagger-codegen/) to create TypeScript metadata for your API, if you have **Swagger** integration.
+https://github.com/jin-qu/jinqu-odata/issues/5
 
-* Using ODataService:
+## LINQ to OData Translation
 
-```typescript
-const service = new ODataService('odata');
-const query = service.createQuery<Company>('Companies');
-const data = await query.toArrayAsync();
-```
-
-## URL Conventions
-
-You should check unit tests for detailed usages, but here are a few samples.
+jinqu-odata translates LINQ queries to OData Version 4 query strings. In the quries that follow, translations are shown as comments. You can check the unit tests for more thorough coverage of the translations.
 
 ### Filter
 
+To filter results we use the `where` operator:
+
 ```typescript
-const result = await query.where(c => c.name.startsWith('Net'));
-// odata/Companies?$filter=startsWith(name,"Net")
+const result = await query
+    .where(c => c.name.startsWith('Net'))
+    .toArrayAsync()
+
+// odata/Companies?$filter=startsWith(name, "Net")
 ```
 
 #### Supported Operators
@@ -103,74 +131,117 @@ const result = await query.where(c => c.name.startsWith('Net'));
 | Math.floor | floor |
 | Math.ceiling | ceiling |
 
-### InlineCount
-
-We can request the count of resources (before applying **skip** and **top**) for paging support. jinqu-odata will make the value available for us.
-
-```typescript
-// enable inline count in query
-const result = await query.inlineCount().toArrayAsync();
-// get the inline count value
-const inlineCount = result.$inlineCount;
-```
-
 ### Select
 
-We execute the query immediately after a select.
+The `select` operator lets us select only a subset of the fields of a type. It can only occur as the last operator in a query, so must be awaited:
 
 ```typescript
-const result = await query.select(c => ({ name: c.name }));
+const result = await query.select(c => ({ name: c.name }))
+
 // $select=name
 ```
 
-OData does not allow primitive results (result must be object), so we enforce it:
+Since OData doesn't allow primitive result types, neither does the jinqu-odata API:
 
 ```typescript
 // NOT ALLOWED
-const result = await query.select(c => c.name);
+const result = await query.select(c => c.name)
 ```
 
 ### OrderBy
 
-Each **orderBy** starts a new ordering, for multiple sort parameters you should use **thenBy** methods.
+The `orderBy` operator, optionally followed by some `thenBy` operators, specifies result order:
 
 ```typescript
-const result = await query.orderBy(c => c.id).thenByDescending(c => c.name).toArrayAsync();
-// $orderby=id,name desc
+const result = await query
+    .orderBy(c => c.category)
+    .thenByDescending(c => c.created).toArrayAsync()
+
+// $orderby=category,created desc
 ```
 
-### Top and Skip
+### Count
 
-Below query will **skip** 20 items and load only 10 of them.
+To get the count of a resource:
 
 ```typescript
-const result = await query.skip(20).top(10).toArrayAsync();
+const count = await query.count()
+
+// Companies/$count will be executed
+```
+
+### Skip and Top
+
+We can skip a number of items, or limit the number of items, by calling `skip` and `top`. Here we query for the 3rd page in a result, by skipping the first 20 results, and then returning the top 10 of the remaining results:
+
+```typescript
+const result = await query.skip(20).top(10).toArrayAsync()
+
 // $skip=20&$top=10
 ```
 
-### Expand
+### InlineCount
 
-jinqu-odata supports expand with selections:
+We can use the `inlineCount` operator to "sneak" in a dynamic `$inlineCount` property into the results.
 
 ```typescript
-const result = await query.expand(c => c.addresses.$expand(a => a.city).country).toArrayAsync();
-// $expand=addresses/city/country
-
-const result = query.expand('addresses.city.country').toArrayAsync();
-// $expand=addresses/city/country
-
-// with selects
-const result = query
-    .expand(c => c.addresses, a => a.city)
-    .expand(c => c.addresses.$expand(a => a.city), c => c.country)
-    .expand(c => c.addresses.$expand(a => a.city).country, c => c.name);
-// $expand=addresses($expand=city($expand=country($select=name),$select=country),$select=city)
+const result = await query.inlineCount().toArrayAsync()
+const inlineCount = result["$inlineCount"]
 ```
+
+This is useful in the preceding `skip/top` scenario, where to implement paging, we'd like the result to include a total non-paged count, without complicating our query or writing a separate query. Just add the `inlineCount` operator before calling `skip/top`.
+
+### Expand
+
+jinqu-odata supports expand, which enables you to pull in related entities. In this example, we don't merely want to return companies; we also want to return the address associated with each company. We can do this as follows:
+
+```typescript
+ const companies = await service
+      .createQuery(Company)      
+      .expand(b => b.Address)
+      .toArrayAsync(
+          
+  // companies$expand=addresses
+```
+
+### Nested Expand
+
+Sometimes we want to drill down more than one level. In this example, our odata source has `books`, where we want to return all the authors for some books. However, since books can have multiple authors, there's a join table between Authors and Books. Our model will mirror the odata metadata as follows:
+
+```typescript
+@oDataResource('Books')
+export class Book {
+  Title: string
+  @Type(() => AuthorBook) AuthorBooks: AuthorBook[]
+}
+
+export class AuthorBook {
+  @Type(() => Author) Author: Author
+}
+
+export class Author {
+  Name: string
+}
+```
+To query, we first `expand` the `AuthorBooks` property, and `thenExpand` the `Book` property, as follows:
+
+```typescript
+ const books = await service
+      .createQuery(Book)      
+      .expand(b => b.AuthorBooks)
+        .thenExpand(ab => ab.Author)
+      .toArrayAsync()
+
+// books?$expand=AuthorBooks($expand=Author)
+```
+
+#### Deserialization
+
+The `@Type` decorators belong to the `class-transformer` library that handles deserialization. We need those annotations since the typescript types aren't actually available at runtime. The `class-transformer` library imposes the small design restriction on us that any constructor arguments to our classes are optional.
 
 ### GroupBy
 
-jinqu-odata supports **GroupBy** with **$apply** convention
-(**GroupBy** also cause the execution of query, like **select**):
+`groupBy` lets you group results by a particular property. Like `select`, it can only be used as the last operator in a query, and must therefore be awaited:
 
 ```typescript
 // we group resources by "deleted" field
@@ -178,28 +249,13 @@ jinqu-odata supports **GroupBy** with **$apply** convention
 const promise = await query.groupBy(
     c => ({ deleted: c.deleted }),
     g => ({ deleted: g.deleted, count: g.count() })
-);
+)
+
 // $apply=groupby((deleted),aggregate(deleted,$count as count))
 ```
 
-### Count
-
-To get the count of the resources, you can use the syntax below:
-
-```typescript
-const count: number = await query.count();
-// Companies/$count will be executed
-```
-
-### Executing
-
-To execute a query and get a promise you can call **toArrayAsync**.
-
-```typescript
-const result = await query.where(c => c.id > 42).toArrayAsync();
-// $filter=id gt 42
-```
+As you can see in the translation, jinqu-odata supports `groupBy` with the `$apply` convention. 
 
 ## License
 
-jinqu-odata is under the [MIT License](LICENSE).
+jinqu-odata is licensed under the [MIT License](LICENSE).
