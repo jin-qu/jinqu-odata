@@ -56,20 +56,17 @@ export class ODataQuery<T extends object> implements IODataQuery<T> {
         return this.provider.executeAsync([...this.parts, part]);
     }
 
-    groupBy<TKey extends object, TResult extends object>(keySelector: Func1<T, TKey>, 
-        elementSelector?: Func1<Array<T> & TKey, TResult>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo>;
     groupBy<TKey extends object, TResult extends object>(
-        keySelector: Func1<T, TKey>, elementSelector?: Func1<Array<T> & TKey, TResult>,
-        ctor?: Ctor<TResult>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo> {
+        keySelector: Func1<T, TKey>, 
+        elementSelector?: Func1<Array<T> & TKey, TResult>, 
+        ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo> {
 
-        const [q, s] = this.fixCtorArg(ctor, scopes);
-
-        const args = [new PartArgument(keySelector, null, s)];
+        const args = [new PartArgument(keySelector, null, scopes)];
         if (elementSelector) {
-            args.push(new PartArgument(elementSelector, null, s));
+            args.push(new PartArgument(elementSelector, null, scopes));
         }
         const part = new QueryPart(ODataFuncs.apply, args);
-        return <any>q.provider.executeAsync([...q.parts, part]);
+        return <any>this.provider.executeAsync([...this.parts, part]);
     }
 
     count(predicate?: Predicate<T>, ...scopes) {
@@ -95,15 +92,6 @@ export class ODataQuery<T extends object> implements IODataQuery<T> {
 
     protected createExpandedQuery<TNav extends object>(part: IQueryPart) {
         return new ExpandedODataQuery<T, TNav>(this.provider, [...this.parts, part]);
-    }
-
-    protected fixCtorArg(ctor: Ctor<any>, scopes: any[]): [IODataQuery<T>, any[]] {
-        if (ctor && typeof ctor !== 'function') {
-            scopes = [ctor, ...scopes];
-            ctor = null;
-        }
-
-        return [ctor ? this.cast(ctor) : this, scopes]
     }
 }
 
@@ -143,8 +131,6 @@ export interface IODataQuery<T> extends IQueryBase {
     select<K extends keyof T>(...names: K[]): PromiseLike<Pick<T, K>[] & InlineCountInfo>;
     groupBy<TKey extends object, TResult extends object>(keySelector: Func1<T, TKey>, 
         elementSelector?: Func1<Array<T> & TKey, TResult>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo>;
-    groupBy<TKey extends object, TResult extends object>(keySelector: Func1<T, TKey>, 
-        elementSelector?: Func1<Array<T> & TKey, TResult>, ctor?: Ctor<T>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo>;
     count(predicate?: Predicate<T>, ...scopes): PromiseLike<T[] & InlineCountInfo>;
     toArrayAsync(ctor?: Ctor<T>): PromiseLike<T[] & InlineCountInfo>;
 }

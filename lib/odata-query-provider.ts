@@ -63,6 +63,7 @@ export class ODataQueryProvider implements IQueryProvider {
                 expands.push(part);
             }
             else if (part.type === ODataFuncs.apply) {
+                ctor = null;
                 apply = part;
             }
             else if (~orderFuncs.indexOf(part.type)) {
