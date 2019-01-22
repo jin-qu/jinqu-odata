@@ -148,22 +148,12 @@ describe('Service tests', () => {
     });
 
     it('should handle select', () => {
-        const token = 'abc';
         const query = service.companies()
-            .select(c => ({ ID: c.id, NAME: c.name, token: token, count: c.addresses.count() }), { token });
+            .select('id', 'name');
         expect(query).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedUrl = `api/Companies?$select=${encodeURIComponent("id as ID,name as NAME,'abc' as token,addresses/$count as count")}`;
-        expect(url).equal(expectedUrl);
-    });
-
-    it('should handle select with ternary', () => {
-        const query = service.companies();
-        expect(query.select(c => ({ ID: c.id, NAME: c.name, STATE: c.deleted ? 'DELETED' : '' }))).to.be.fulfilled.and.eventually.be.null;
-
-        const url = provider.options.url;
-        const expectedUrl = `api/Companies?$select=${encodeURIComponent("id as ID,name as NAME,deleted ? 'DELETED' : '' as STATE")}`;
+        const expectedUrl = `api/Companies?$select=${encodeURIComponent("id,name")}`;
         expect(url).equal(expectedUrl);
     });
 
@@ -415,16 +405,6 @@ describe('Service tests', () => {
         const prv = new MockRequestProvider({ value: getCompanies() });
         const svc = new ODataService('api', prv);
         const result = await svc.createQuery<ICompany>('Companies').toArrayAsync(Company);
-
-        result.forEach(r => expect(r).to.be.instanceOf(Company));
-    });
-
-    it('should handle cast for nested values', async () => {
-        const data = getCompanies().map(c => ({ company: c }));
-        const prv = new MockRequestProvider(data);
-        const svc = new ODataService('api', prv);
-        const query = svc.createQuery<{ company: ICompany }>('Companies');
-        const result = await query.select<ICompany>(d => d.company, Company);
 
         result.forEach(r => expect(r).to.be.instanceOf(Company));
     });

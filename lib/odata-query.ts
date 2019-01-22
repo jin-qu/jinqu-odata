@@ -1,6 +1,6 @@
 import {
     IQueryProvider, IQueryPart, Predicate, Func1, IQueryBase,
-    InlineCountInfo, QueryPart, PartArgument, AjaxOptions, AjaxFuncs, QueryFunc, IOrderedQuery, Query, Ctor
+    InlineCountInfo, QueryPart, PartArgument, AjaxOptions, AjaxFuncs, Ctor
 } from "jinqu";
 
 export class ODataQuery<T extends object> implements IODataQuery<T> {
@@ -51,11 +51,9 @@ export class ODataQuery<T extends object> implements IODataQuery<T> {
         return this.create(part);
     }
 
-    select<TResult extends object>(selector: Func1<T, TResult>, ...scopes): PromiseLike<TResult[] & InlineCountInfo>;
-    select<TResult extends object>(selector: Func1<T, TResult>, ctor: Ctor<T>, ...scopes): PromiseLike<TResult[] & InlineCountInfo> {
-        const [q, s] = this.fixCtorArg(ctor, scopes);
-
-        return q.provider.executeAsync([...q.parts, QueryPart.select(selector, s)]);
+    select<K extends keyof T>(...names: K[]): PromiseLike<Pick<T, K>[] & InlineCountInfo> {
+        const part = new QueryPart(ODataFuncs.oDataSelect, [PartArgument.literal(names)]);
+        return this.provider.executeAsync([...this.parts, part]);
     }
 
     groupBy<TKey extends object, TResult extends object>(keySelector: Func1<T, TKey>, 
@@ -142,8 +140,7 @@ export interface IODataQuery<T> extends IQueryBase {
     top(count: number): IODataQuery<T>;
     cast(ctor: Ctor<T>): IODataQuery<T>;
 
-    select<TResult = any>(selector: Func1<T, TResult>, ...scopes): PromiseLike<TResult[] & InlineCountInfo>;
-    select<TResult = any>(selector: Func1<T, TResult>, ctor: Ctor<T>, ...scopes): PromiseLike<TResult[] & InlineCountInfo>;
+    select<K extends keyof T>(...names: K[]): PromiseLike<Pick<T, K>[] & InlineCountInfo>;
     groupBy<TKey extends object, TResult extends object>(keySelector: Func1<T, TKey>, 
         elementSelector?: Func1<Array<T> & TKey, TResult>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo>;
     groupBy<TKey extends object, TResult extends object>(keySelector: Func1<T, TKey>, 
@@ -163,6 +160,7 @@ export interface IExpandedODataQuery<TEntity, TProperty> extends IODataQuery<TEn
 
 export const ODataFuncs = {
     filter: 'filter',
+    oDataSelect: 'oDataSelect',
     top: 'top',
     expand: 'expand',
     thenExpand: 'thenExpand',

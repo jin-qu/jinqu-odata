@@ -2,20 +2,20 @@ import { plainToClass } from 'class-transformer';
 import {
     ExpressionType, Expression,
     LiteralExpression, VariableExpression, UnaryExpression,
-    GroupExpression, AssignExpression, ObjectExpression, ArrayExpression,
-    BinaryExpression, MemberExpression, IndexerExpression, FuncExpression,
+    GroupExpression, AssignExpression, ObjectExpression,
+    BinaryExpression, MemberExpression, FuncExpression,
     CallExpression, TernaryExpression
 } from 'jokenizer';
 import { 
     IQueryPart, IRequestProvider, QueryFunc, AjaxFuncs, 
-    AjaxOptions, IQueryProvider, QueryParameter, IPartArgument, PartArgument, Ctor 
+    AjaxOptions, IQueryProvider, QueryParameter, IPartArgument, Ctor 
 } from 'jinqu';
 import { ODataQuery, ODataFuncs } from './odata-query';
 
 const orderFuncs = [QueryFunc.orderBy, QueryFunc.orderByDescending];
 const thenFuncs = [QueryFunc.thenBy, QueryFunc.thenByDescending];
 const descFuncs = [QueryFunc.orderByDescending, QueryFunc.thenByDescending];
-const otherFuncs = [QueryFunc.inlineCount, QueryFunc.select, QueryFunc.skip, QueryFunc.count, ODataFuncs.filter, ODataFuncs.top];
+const otherFuncs = [QueryFunc.inlineCount, QueryFunc.skip, QueryFunc.count, ODataFuncs.filter, ODataFuncs.top];
 const mathFuncs = ['round', 'floor', 'ceiling'];
 const aggregateFuncs = ['sum', 'max', 'min'];
 
@@ -26,7 +26,7 @@ export class ODataQueryProvider implements IQueryProvider {
 
     private rootLambda = true;
 
-    createQuery<T>(parts?: IQueryPart[]): ODataQuery<T> {
+    createQuery<T extends object>(parts?: IQueryPart[]): ODataQuery<T> {
         return new ODataQuery<T>(this, parts);
     }
 
@@ -40,6 +40,7 @@ export class ODataQueryProvider implements IQueryProvider {
             queryParams: QueryParameter[] = [];
         let inlineCount = false,
             orders: IQueryPart[] = [],
+            select: IQueryPart,
             expands: IQueryPart[] = [],
             apply: IQueryPart,
             ctor: Ctor<any>;
@@ -54,6 +55,9 @@ export class ODataQueryProvider implements IQueryProvider {
             else if (part.type === QueryFunc.toArray || part.type === QueryFunc.first || part.type === QueryFunc.single) continue;
             else if (part.type === QueryFunc.inlineCount) {
                 inlineCount = part.args[0].literal !== false;
+            }
+            else if (part.type === ODataFuncs.oDataSelect) {
+                select = part;
             }
             else if (part.type === ODataFuncs.expand || part.type === ODataFuncs.thenExpand) {
                 expands.push(part);
@@ -73,6 +77,18 @@ export class ODataQueryProvider implements IQueryProvider {
             else throw new Error(`${part.type} is not supported.`);
         }
 
+        if (orders.length) {
+            const value = orders.map(o => {
+                const v = this.handlePartArg(o.args[0]);
+                return ~descFuncs.indexOf(o.type) ? (v + ' desc') : v;
+            }).join(',');
+            queryParams.push({ key: '$orderby', value });
+        }
+
+        if (select) {
+            queryParams.push({ key: '$select', value: select.args[0].literal.join(',') });
+        }
+        
         if (expands.length) {
             const es: ExpandCollection = {};
             let ce: ExpandContainer;
@@ -98,14 +114,6 @@ export class ODataQueryProvider implements IQueryProvider {
             });
 
             queryParams.push({ key: '$expand', value: walkExpands(es) });
-        }
-
-        if (orders.length) {
-            const value = orders.map(o => {
-                const v = this.handlePartArg(o.args[0]);
-                return ~descFuncs.indexOf(o.type) ? (v + ' desc') : v;
-            }).join(',');
-            queryParams.push({ key: '$orderby', value });
         }
 
         if (inlineCount) {

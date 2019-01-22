@@ -61,10 +61,10 @@ export class ODataService implements IRequestProvider<AjaxOptions>  {
             });
     }
 
-    createQuery<T>(resource: string): ODataQuery<T>;
-    createQuery<T>(resource: string, ctor: Ctor<T>): ODataQuery<T>;
-    createQuery<T>(ctor: Ctor<T>): ODataQuery<T>;
-    createQuery<T>(resource: string | Ctor<T>, ctor?: Ctor<T>): ODataQuery<T> {
+    createQuery<T extends object>(resource: string): ODataQuery<T>;
+    createQuery<T extends object>(resource: string, ctor: Ctor<T>): ODataQuery<T>;
+    createQuery<T extends object>(ctor: Ctor<T>): ODataQuery<T>;
+    createQuery<T extends object>(resource: string | Ctor<T>, ctor?: Ctor<T>): ODataQuery<T> {
         if (typeof resource === 'function') {
             ctor = resource;
             resource = getResource(ctor);
