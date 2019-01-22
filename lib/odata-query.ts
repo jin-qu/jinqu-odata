@@ -20,7 +20,7 @@ export class ODataQuery<T extends object> implements IODataQuery<T> {
         return this.create(QueryPart.inlineCount(value));
     }
 
-    filter(predicate: Predicate<T>, ...scopes): IODataQuery<T> {
+    where(predicate: Predicate<T>, ...scopes): IODataQuery<T> {
         const part = new QueryPart(ODataFuncs.filter, [PartArgument.identifier(predicate, scopes)]);
         return this.create(part);
     }
@@ -46,7 +46,7 @@ export class ODataQuery<T extends object> implements IODataQuery<T> {
         return this.create(QueryPart.skip(count));
     }
 
-    top(count: number): IODataQuery<T> {
+    take(count: number): IODataQuery<T> {
         const part = new QueryPart(ODataFuncs.top, [PartArgument.literal(count)]);
         return this.create(part);
     }
@@ -120,12 +120,12 @@ class ExpandedODataQuery<TEntity extends object, TProperty> extends ODataQuery<T
 
 export interface IODataQuery<T> extends IQueryBase {
     inlineCount(value?: boolean): IODataQuery<T>;
-    filter(predicate: Predicate<T>, ...scopes): IODataQuery<T>;
+    where(predicate: Predicate<T>, ...scopes): IODataQuery<T>;
     orderBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
     orderByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
     expand<TNav extends object>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>): IExpandedODataQuery<T, TNav>;
     skip(count: number): IODataQuery<T>;
-    top(count: number): IODataQuery<T>;
+    take(count: number): IODataQuery<T>;
     cast(ctor: Ctor<T>): IODataQuery<T>;
 
     select<K extends keyof T>(...names: K[]): PromiseLike<Pick<T, K>[] & InlineCountInfo>;

@@ -41,6 +41,7 @@ export class Company implements ICompany {
     deleted: boolean;
     createDate: Date;
     addresses: Address[];
+    address?: Address;
 }
 
 export interface ICompany extends Company { }
