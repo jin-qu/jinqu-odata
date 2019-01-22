@@ -158,10 +158,13 @@ describe('Service tests', () => {
     });
 
     it('should handle expand with multi level', () => {
+        const q = service.companies();
+        q.expand('addresses', ['city', 'id']);
+        
         const query = service.companies()
-            .expand(c => c.addresses)
-                .thenExpand(a => a.city)
-                    .thenExpand(c => c.country);
+            .expand('addresses')
+                .thenExpand('city')
+                    .thenExpand('country');
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -171,9 +174,10 @@ describe('Service tests', () => {
 
     it('should handle expand with multi level with repeated calls', () => {
         const query = service.companies()
-            .expand(c => c.addresses, c => c.city)
-            .expand(c => c.addresses)
-                .thenExpand(a => a.city.country)
+            .expand('addresses', ['city'])
+            .expand('addresses')
+                .thenExpand('city')
+                    .thenExpand('country');
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -183,10 +187,10 @@ describe('Service tests', () => {
 
     it('should handle expand with multi level with repeated calls and selects', () => {
         const query = service.companies()
-            .expand(c => c.addresses)
-            .expand(c => c.addresses, a => a.city)
-                .thenExpand(a => a.city, c => c.country)
-                    .thenExpand(c => c.country, c => c.name);
+            .expand('addresses')
+            .expand('addresses', ['city'])
+                .thenExpand('city', ['country'])
+                    .thenExpand('country', ['name']);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -197,8 +201,9 @@ describe('Service tests', () => {
 
     it('should handle expand with multi level with repeated calls and deep expands with selects', () => {
         const query = service.companies()
-            .expand(c => c.addresses, a => a.city)
-                .thenExpand(a => a.city.country, c => c.name);
+            .expand('addresses', ['city'])
+                .thenExpand('city')
+                    .thenExpand('country', ['name']);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;

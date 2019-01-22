@@ -33,13 +33,13 @@ export class ODataQuery<T extends object> implements IODataQuery<T> {
         return this.createOrderedQuery(QueryPart.orderByDescending(keySelector, scopes));
     }
 
-    expand<TNav extends object>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>): IExpandedODataQuery<T, TNav> {
-        const args = [PartArgument.identifier(navigationSelector, null)];
+    expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, selector?: K2[]): IExpandedODataQuery<T, AU<T[K1]>> {
+        const args = [PartArgument.literal(nav)];
         if (selector) {
-            args.push(PartArgument.identifier(selector, null));
+            args.push(PartArgument.literal(selector));
         }
 
-        return this.createExpandedQuery<TNav>(new QueryPart(ODataFuncs.expand, args));
+        return this.createExpandedQuery<any>(new QueryPart(ODataFuncs.expand, args));
     }
 
     skip(count: number): IODataQuery<T> {
@@ -57,8 +57,8 @@ export class ODataQuery<T extends object> implements IODataQuery<T> {
     }
 
     groupBy<TKey extends object, TResult extends object>(
-        keySelector: Func1<T, TKey>, 
-        elementSelector?: Func1<Array<T> & TKey, TResult>, 
+        keySelector: Func1<T, TKey>,
+        elementSelector?: Func1<Array<T> & TKey, TResult>,
         ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo> {
 
         const args = [new PartArgument(keySelector, null, scopes)];
@@ -74,7 +74,7 @@ export class ODataQuery<T extends object> implements IODataQuery<T> {
     }
 
     cast(ctor: Ctor<T>) {
-        return this.create<T>(QueryPart.cast(ctor));
+        return this.create(QueryPart.cast(ctor));
     }
 
     toArrayAsync(ctor?: Ctor<T>): PromiseLike<T[] & InlineCountInfo> {
@@ -82,7 +82,7 @@ export class ODataQuery<T extends object> implements IODataQuery<T> {
         return (<any>query.provider).executeAsync([...query.parts, QueryPart.toArray()]);
     }
 
-    protected create<T extends object>(part: IQueryPart): IODataQuery<T> {
+    protected create(part: IQueryPart): IODataQuery<T> {
         return new ODataQuery<T>(this.provider, [...this.parts, part]);
     }
 
@@ -108,13 +108,13 @@ class OrderedODataQuery<T extends object> extends ODataQuery<T> implements IOrde
 
 class ExpandedODataQuery<TEntity extends object, TProperty> extends ODataQuery<TEntity> implements IExpandedODataQuery<TEntity, TProperty> {
 
-    thenExpand<TNav extends object>(navigationSelector: Func1<TProperty, TNav[] | TNav>, selector?: Func1<TNav, any>): IExpandedODataQuery<TEntity, TNav> {
-        const args = [PartArgument.identifier(navigationSelector, null)];
+    thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(nav: K1, selector?: K2[]): IExpandedODataQuery<TEntity, AU<TProperty[K1]>> {
+        const args = [PartArgument.literal(nav)];
         if (selector) {
-            args.push(PartArgument.identifier(selector, null));
+            args.push(PartArgument.literal(selector));
         }
 
-        return this.createExpandedQuery<TNav>(new QueryPart(ODataFuncs.thenExpand, args));
+        return this.createExpandedQuery<any>(new QueryPart(ODataFuncs.thenExpand, args));
     }
 }
 
@@ -123,13 +123,13 @@ export interface IODataQuery<T> extends IQueryBase {
     where(predicate: Predicate<T>, ...scopes): IODataQuery<T>;
     orderBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
     orderByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
-    expand<TNav extends object>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>): IExpandedODataQuery<T, TNav>;
+    expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, selector?: K2[]): IExpandedODataQuery<T, AU<T[K1]>>
     skip(count: number): IODataQuery<T>;
     take(count: number): IODataQuery<T>;
     cast(ctor: Ctor<T>): IODataQuery<T>;
 
     select<K extends keyof T>(...names: K[]): PromiseLike<Pick<T, K>[] & InlineCountInfo>;
-    groupBy<TKey extends object, TResult extends object>(keySelector: Func1<T, TKey>, 
+    groupBy<TKey extends object, TResult extends object>(keySelector: Func1<T, TKey>,
         elementSelector?: Func1<Array<T> & TKey, TResult>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo>;
     count(predicate?: Predicate<T>, ...scopes): PromiseLike<number>;
     toArrayAsync(ctor?: Ctor<T>): PromiseLike<T[] & InlineCountInfo>;
@@ -141,7 +141,7 @@ export interface IOrderedODataQuery<T> extends IODataQuery<T> {
 }
 
 export interface IExpandedODataQuery<TEntity, TProperty> extends IODataQuery<TEntity> {
-    thenExpand<TNav extends object>(navigationSelector: Func1<TProperty, TNav[] | TNav>, selector?: Func1<TNav, any>): IExpandedODataQuery<TEntity, TNav>;
+    thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(nav: K1, selector?: K2[]): IExpandedODataQuery<TEntity, AU<TProperty[K1]>>;
 }
 
 export const ODataFuncs = {
@@ -152,3 +152,5 @@ export const ODataFuncs = {
     thenExpand: 'thenExpand',
     apply: 'apply'
 };
+
+type AU<T> = T extends Array<any> ? T[0] : T;
