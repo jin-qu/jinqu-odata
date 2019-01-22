@@ -69,7 +69,7 @@ export class ODataQuery<T extends object> implements IODataQuery<T> {
         return <any>this.provider.executeAsync([...this.parts, part]);
     }
 
-    count(predicate?: Predicate<T>, ...scopes) {
+    count(predicate?: Predicate<T>, ...scopes): PromiseLike<number> {
         return this.provider.executeAsync([...this.parts, QueryPart.count(predicate, scopes)]);
     }
 
@@ -131,7 +131,7 @@ export interface IODataQuery<T> extends IQueryBase {
     select<K extends keyof T>(...names: K[]): PromiseLike<Pick<T, K>[] & InlineCountInfo>;
     groupBy<TKey extends object, TResult extends object>(keySelector: Func1<T, TKey>, 
         elementSelector?: Func1<Array<T> & TKey, TResult>, ...scopes: any[]): PromiseLike<TResult[] & InlineCountInfo>;
-    count(predicate?: Predicate<T>, ...scopes): PromiseLike<T[] & InlineCountInfo>;
+    count(predicate?: Predicate<T>, ...scopes): PromiseLike<number>;
     toArrayAsync(ctor?: Ctor<T>): PromiseLike<T[] & InlineCountInfo>;
 }
 
