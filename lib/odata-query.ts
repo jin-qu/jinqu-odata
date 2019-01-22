@@ -3,7 +3,7 @@ import {
     InlineCountInfo, QueryPart, PartArgument, AjaxOptions, AjaxFuncs, QueryFunc, IOrderedQuery, Query, Ctor
 } from "jinqu";
 
-export class ODataQuery<T> implements IODataQuery<T> {
+export class ODataQuery<T extends object> implements IODataQuery<T> {
 
     constructor(public readonly provider: IQueryProvider, public readonly parts: IQueryPart[] = []) {
     }
@@ -33,7 +33,7 @@ export class ODataQuery<T> implements IODataQuery<T> {
         return this.createOrderedQuery(QueryPart.orderByDescending(keySelector, scopes));
     }
 
-    expand<TNav extends Object>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<T, TNav> {
+    expand<TNav extends object>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<T, TNav> {
         const args = [PartArgument.identifier(navigationSelector, scopes)];
         if (selector) {
             args.push(PartArgument.identifier(selector, scopes));
@@ -87,7 +87,7 @@ export class ODataQuery<T> implements IODataQuery<T> {
         return (<any>query.provider).executeAsync([...query.parts, QueryPart.toArray()]);
     }
 
-    protected create<T>(part: IQueryPart): IODataQuery<T> {
+    protected create<T extends object>(part: IQueryPart): IODataQuery<T> {
         return new ODataQuery<T>(this.provider, [...this.parts, part]);
     }
 
@@ -95,7 +95,7 @@ export class ODataQuery<T> implements IODataQuery<T> {
         return new OrderedODataQuery<T>(this.provider, [...this.parts, part]);
     }
 
-    protected createExpandedQuery<TNav extends Object>(part: IQueryPart) {
+    protected createExpandedQuery<TNav extends object>(part: IQueryPart) {
         return new ExpandedODataQuery<T, TNav>(this.provider, [...this.parts, part]);
     }
 
@@ -109,7 +109,7 @@ export class ODataQuery<T> implements IODataQuery<T> {
     }
 }
 
-class OrderedODataQuery<T> extends ODataQuery<T> implements IOrderedODataQuery<T> {
+class OrderedODataQuery<T extends object> extends ODataQuery<T> implements IOrderedODataQuery<T> {
 
     thenBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T> {
         return this.createOrderedQuery(QueryPart.thenBy(keySelector, scopes));
@@ -120,9 +120,9 @@ class OrderedODataQuery<T> extends ODataQuery<T> implements IOrderedODataQuery<T
     }
 }
 
-class ExpandedODataQuery<TEntity, TProperty> extends ODataQuery<TEntity> implements IExpandedODataQuery<TEntity, TProperty> {
+class ExpandedODataQuery<TEntity extends object, TProperty> extends ODataQuery<TEntity> implements IExpandedODataQuery<TEntity, TProperty> {
 
-    thenExpand<TNav extends Object>(navigationSelector: Func1<TProperty, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<TEntity, TNav> {
+    thenExpand<TNav extends object>(navigationSelector: Func1<TProperty, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<TEntity, TNav> {
         const args = [PartArgument.identifier(navigationSelector, scopes)];
         if (selector) {
             args.push(PartArgument.identifier(selector, scopes));
@@ -137,7 +137,7 @@ export interface IODataQuery<T> extends IQueryBase {
     filter(predicate: Predicate<T>, ...scopes): IODataQuery<T>;
     orderBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
     orderByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
-    expand<TNav extends Object>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<T, TNav>;
+    expand<TNav extends object>(navigationSelector: Func1<T, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<T, TNav>;
     skip(count: number): IODataQuery<T>;
     top(count: number): IODataQuery<T>;
     cast(ctor: Ctor<T>): IODataQuery<T>;
@@ -158,7 +158,7 @@ export interface IOrderedODataQuery<T> extends IODataQuery<T> {
 }
 
 export interface IExpandedODataQuery<TEntity, TProperty> extends IODataQuery<TEntity> {
-    thenExpand<TNav extends Object>(navigationSelector: Func1<TProperty, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<TEntity, TNav>;
+    thenExpand<TNav extends object>(navigationSelector: Func1<TProperty, TNav[] | TNav>, selector?: Func1<TNav, any>, ...scopes): IExpandedODataQuery<TEntity, TNav>;
 }
 
 export const ODataFuncs = {
