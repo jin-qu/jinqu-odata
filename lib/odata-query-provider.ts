@@ -183,8 +183,6 @@ export class ODataQueryProvider implements IQueryProvider {
                 return this.funcToStr(exp as FuncExpression, scopes, parameters);
             case ExpressionType.Call:
                 return this.callToStr(exp as CallExpression, scopes, parameters);
-            case ExpressionType.Ternary:
-                return this.ternaryToStr(exp as TernaryExpression, scopes, parameters);
             default:
                 throw new Error(`Unsupported expression type ${exp.type}`);
         }
@@ -254,11 +252,6 @@ export class ODataQueryProvider implements IQueryProvider {
         if (member.name === 'count')
             return ownerStr ? `${ownerStr}/$count` : '$count';
 
-        if (member.name === 'select') {
-            const arg = this.handleExp(exp.args[0], scopes);
-            return ownerStr ? `${ownerStr}/${arg}` : arg;
-        }
-
         if (~aggregateFuncs.indexOf(member.name))
             return `${this.handleExp(exp.args[0], scopes)} with ${member.name}`;
 
@@ -275,14 +268,6 @@ export class ODataQueryProvider implements IQueryProvider {
 
         const oDataFunc = functions[callee.name] || callee.name.toLowerCase();
         return `${oDataFunc}(${args})`;
-    }
-
-    ternaryToStr(exp: TernaryExpression, scopes: any[], parameters: string[]) {
-        const predicate = this.expToStr(exp.predicate, scopes, parameters);
-        const whenTrue = this.expToStr(exp.whenTrue, scopes, parameters);
-        const whenFalse = this.expToStr(exp.whenFalse, scopes, parameters);
-
-        return `${predicate} ? ${whenTrue} : ${whenFalse}`;
     }
 
     valueToStr(value) {
