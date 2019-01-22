@@ -182,26 +182,26 @@ const result = await query.skip(20).top(10).toArrayAsync()
 
 ### InlineCount
 
-We can use the `inlineCount` operator to "sneak" in a dynamic `$inlineCount` property into the results.
+We can use the `inlineCount` operator to populate the `$inlineCount` property on the results.
 
 ```typescript
 const result = await query.inlineCount().toArrayAsync()
-const inlineCount = result["$inlineCount"]
+const inlineCount = result.$inlineCount // only populated if inlineCount operator was called
 ```
 
-This is useful in the preceding `skip/top` scenario, where to implement paging, we'd like the result to include a total non-paged count, without complicating our query or writing a separate query. Just add the `inlineCount` operator before calling `skip/top`.
+This is useful in the preceding `skip/top` scenario, where to implement paging, we'd like the result to include a total non-paged count, without having to write a separate query. Just add the `inlineCount` operator before calling `skip/top`.
 
 ### Expand
 
-jinqu-odata supports expand, which enables you to pull in related entities. In this example, we don't merely want to return companies; we also want to return the address associated with each company. We can do this as follows:
+jinqu-odata supports expand, which enables you to pull in related entities. In this example, we don't merely want to return books; we also want to return the press associated with each book. We can do this as follows:
 
 ```typescript
  const companies = await service
-      .createQuery(Company)      
-      .expand(b => b.Address)
-      .toArrayAsync(
+      .createQuery(Book)      
+      .expand(b => b.Press)
+      .toArrayAsync()
           
-  // companies$expand=addresses
+  // books$expand=Press
 ```
 
 ### Nested Expand
@@ -228,12 +228,31 @@ To query, we first `expand` the `AuthorBooks` property, and `thenExpand` the `Bo
 ```typescript
  const books = await service
       .createQuery(Book)      
-      .expand(b => b.AuthorBooks)
-        .thenExpand(ab => ab.Author)
+      .expand("AuthorBooks")
+        .thenExpand("Author")
       .toArrayAsync()
 
 // books?$expand=AuthorBooks($expand=Author)
 ```
+
+#### Filtering Expand by Rows and Columns
+
+For efficiency, we can **filter by rows** an `expand`/`thenExpand` query by providing a predicate:
+
+```typescript
+  .thenExpand("Author") // no filter
+  .thenExpand("Author", a => a.endsWith ("Albahari")) // filtered
+  
+  // books?$expand=AuthorBooks($expand=Author($filter=endswith(Name,'Albahari')))
+````
+Similarly, for efficiency, we can **filter by columns** an `expand`/`thenExpand` query by providing an array of column names:
+
+```typescript
+  .thenExpand("Author") // no filter
+  .thenExpand("Author", ["Name"]) // filtered columns
+
+  // books?$expand=AuthorBooks($expand=Author($select=Name))
+ ```
 
 #### Deserialization
 
