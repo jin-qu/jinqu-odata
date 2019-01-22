@@ -134,15 +134,17 @@ export class ODataQueryProvider implements IQueryProvider {
     }
 
     handlePartArg(arg: IPartArgument): string {
-        this.rootLambda = true;
         return arg.literal != null || arg.exp == null
             ? arg.literal
             : this.handleExp(arg.exp, arg.scopes);
     }
 
     handleExp(exp: Expression, scopes: any[]) {
+        const rl = this.rootLambda;
         this.rootLambda = true;
-        return this.expToStr(exp, scopes, exp.type === ExpressionType.Func ? (exp as FuncExpression).parameters : [])
+        const retVal = this.expToStr(exp, scopes, exp.type === ExpressionType.Func ? (exp as FuncExpression).parameters : []);
+        this.rootLambda = rl;
+        return retVal;
     }
 
     expToStr(exp: Expression, scopes: any[], parameters: string[]): string {
@@ -244,6 +246,11 @@ export class ODataQueryProvider implements IQueryProvider {
         if (member.name === 'count')
             return ownerStr ? `${ownerStr}/$count` : '$count';
 
+        if (member.name === 'select') {
+            const arg = this.handleExp(exp.args[0], scopes);
+            return ownerStr ? `${ownerStr}/${arg}` : arg;
+        }
+
         if (~aggregateFuncs.indexOf(member.name))
             return `${this.handleExp(exp.args[0], scopes)} with ${member.name}`;
 
@@ -333,11 +340,11 @@ function walkExpands(e: ExpandCollection) {
         let childStr = walkExpands(exp.children);
 
         const subStrs = [];
-        if (childStr) {
-            subStrs.push(`$expand=${childStr}`);
-        }
         if (exp.select) {
             subStrs.push(`$select=${exp.select}`);
+        }
+        if (childStr) {
+            subStrs.push(`$expand=${childStr}`);
         }
         
         const expStr = subStrs.length

@@ -230,7 +230,7 @@ describe('Service tests', () => {
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedPrm = 'addresses($expand=city($expand=country($select=name),$select=country),$select=city)';
+        const expectedPrm = 'addresses($select=city,$expand=city($select=country,$expand=country($select=name)))';
         const expectedUrl = `api/Companies?$expand=${encodeURIComponent(expectedPrm)}`;
         expect(url).equal(expectedUrl);
     });
@@ -242,7 +242,7 @@ describe('Service tests', () => {
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedPrm = 'addresses($expand=city($expand=country($select=name)),$select=city)';
+        const expectedPrm = 'addresses($select=city,$expand=city($expand=country($select=name)))';
         const expectedUrl = `api/Companies?$expand=${encodeURIComponent(expectedPrm)}`;
         expect(url).equal(expectedUrl);
     });
