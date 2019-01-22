@@ -136,16 +136,9 @@ const result = await query
 The `select` operator lets us select only a subset of the fields of a type. It can only occur as the last operator in a query, so must be awaited:
 
 ```typescript
-const result = await query.select(c => ({ name: c.name }))
+const result = await query.select("name")
 
 // $select=name
-```
-
-Since OData doesn't allow primitive result types, neither does the jinqu-odata API:
-
-```typescript
-// NOT ALLOWED
-const result = await query.select(c => c.name)
 ```
 
 ### OrderBy
@@ -170,12 +163,12 @@ const count = await query.count()
 // Companies/$count will be executed
 ```
 
-### Skip and Top
+### Skip and Take
 
-We can skip a number of items, or limit the number of items, by calling `skip` and `top`. Here we query for the 3rd page in a result, by skipping the first 20 results, and then returning the top 10 of the remaining results:
+We can skip a number of items, or limit the number of items, by calling `skip` and `take`. Here we query for the 3rd page in a result, by skipping the first 20 results, and then returning the top 10 of the remaining results:
 
 ```typescript
-const result = await query.skip(20).top(10).toArrayAsync()
+const result = await query.skip(20).take(10).toArrayAsync()
 
 // $skip=20&$top=10
 ```
@@ -189,7 +182,7 @@ const result = await query.inlineCount().toArrayAsync()
 const inlineCount = result.$inlineCount // only populated if inlineCount operator was called
 ```
 
-This is useful in the preceding `skip/top` scenario, where to implement paging, we'd like the result to include a total non-paged count, without having to write a separate query. Just add the `inlineCount` operator before calling `skip/top`.
+This is useful in the preceding `skip/take` scenario, where to implement paging, we'd like the result to include a total non-paged count, without having to write a separate query. Just add the `inlineCount` operator before calling `skip/take`.
 
 ### Expand
 
@@ -198,7 +191,7 @@ jinqu-odata supports expand, which enables you to pull in related entities. In t
 ```typescript
  const companies = await service
       .createQuery(Book)      
-      .expand(b => b.Press)
+      .expand("Press")
       .toArrayAsync()
           
   // books$expand=Press
