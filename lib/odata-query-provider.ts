@@ -324,7 +324,7 @@ const functions = {
     'getFullYear': 'year'
 };
 
-type ExpandContainer = { select?: string, children: ExpandCollection };
+type ExpandContainer = { select?: string, filter?: string, children: ExpandCollection };
 type ExpandCollection = { [expand: string]: ExpandContainer };
 
 function walkExpands(e: ExpandCollection) {
@@ -334,6 +334,9 @@ function walkExpands(e: ExpandCollection) {
         let childStr = walkExpands(exp.children);
 
         const subStrs = [];
+        if (exp.filter) {
+            subStrs.push(`$filter=${exp.filter}`);
+        }
         if (exp.select) {
             subStrs.push(`$select=${exp.select}`);
         }
@@ -342,7 +345,7 @@ function walkExpands(e: ExpandCollection) {
         }
         
         const expStr = subStrs.length
-            ? `${p}(${subStrs.join(',')})`
+            ? `${p}(${subStrs.join(';')})`
             : p;
         expStrs.push(expStr);
     }
