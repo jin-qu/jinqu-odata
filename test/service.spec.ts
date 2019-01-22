@@ -169,36 +169,6 @@ describe('Service tests', () => {
         expect(url).equal(expectedUrl);
     });
 
-    it('should handle expand with multi level using strings 1', () => {
-        const query = service.companies().expand('addresses.city.country');
-        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
-
-        const url = provider.options.url;
-        const expectedUrl = `api/Companies?$expand=${encodeURIComponent('addresses($expand=city($expand=country))')}`;
-        expect(url).equal(expectedUrl);
-    });
-
-    it('should handle expand with multi level using strings 2', () => {
-        const query = service.companies()
-            .expand('c => c.addresses.city.country');
-        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
-
-        const url = provider.options.url;
-        const expectedUrl = `api/Companies?$expand=${encodeURIComponent('addresses($expand=city($expand=country))')}`;
-        expect(url).equal(expectedUrl);
-    });
-
-    it('should handle expand with multi level using strings 3', () => {
-        const query = service.companies()
-            .expand('c => c.addresses')
-                .thenExpand('a => a.city.country');
-        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
-
-        const url = provider.options.url;
-        const expectedUrl = `api/Companies?$expand=${encodeURIComponent('addresses($expand=city($expand=country))')}`;
-        expect(url).equal(expectedUrl);
-    });
-
     it('should handle expand with multi level with repeated calls', () => {
         const query = service.companies()
             .expand(c => c.addresses, c => c.city)
