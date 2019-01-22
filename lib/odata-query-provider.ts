@@ -94,8 +94,9 @@ export class ODataQueryProvider implements IQueryProvider {
             const es: ExpandCollection = {};
             let ce: ExpandContainer;
             expands.forEach(e => {
-                const exps = this.handlePartArg(e.args[0]).split('/');
-                const sel = e.args[1] ? this.handlePartArg(e.args[1]) : null;
+                const exp = e.args[0].literal;
+                const sel = e.args[1].literal;
+                const fil = this.handlePartArg(e.args[2]);
 
                 let col: ExpandCollection;
                 if (e.type === ODataFuncs.expand) {
@@ -107,11 +108,10 @@ export class ODataQueryProvider implements IQueryProvider {
                     col = ce.children;
                 }
 
-                exps.forEach(exp => {
-                    ce = col[exp] || (col[exp] = { children: {} });
-                    col = ce.children;
-                });
+                ce = col[exp] || (col[exp] = { children: {} });
+                col = ce.children;
                 ce.select = sel;
+                ce.filter = fil;
             });
 
             queryParams.push({ key: '$expand', value: walkExpands(es) });

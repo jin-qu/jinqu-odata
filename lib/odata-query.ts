@@ -33,12 +33,11 @@ export class ODataQuery<T extends object> implements IODataQuery<T> {
         return this.createOrderedQuery(QueryPart.orderByDescending(keySelector, scopes));
     }
 
-    expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, selector?: K2[]): IExpandedODataQuery<T, AU<T[K1]>> {
-        const args = [PartArgument.literal(nav)];
-        if (selector) {
-            args.push(PartArgument.literal(selector));
-        }
-
+    expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, selector?: K2[]): IExpandedODataQuery<T, AU<T[K1]>>;
+    expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, filter: Predicate<AU<T[K1]>>, ...scopes): IExpandedODataQuery<T, AU<T[K1]>>;
+    expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, selector: K2[], filter: Predicate<AU<T[K1]>>, ...scopes): IExpandedODataQuery<T, AU<T[K1]>>;
+    expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, prm1?: K2[] | Predicate<AU<T[K1]>>, prm2?: Predicate<AU<T[K1]>>, ...scopes): IExpandedODataQuery<T, AU<T[K1]>> {
+        const args = createExpandArgs(nav, prm1, prm2, scopes);
         return this.createExpandedQuery<any>(new QueryPart(ODataFuncs.expand, args));
     }
 
@@ -108,12 +107,11 @@ class OrderedODataQuery<T extends object> extends ODataQuery<T> implements IOrde
 
 class ExpandedODataQuery<TEntity extends object, TProperty> extends ODataQuery<TEntity> implements IExpandedODataQuery<TEntity, TProperty> {
 
-    thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(nav: K1, selector?: K2[]): IExpandedODataQuery<TEntity, AU<TProperty[K1]>> {
-        const args = [PartArgument.literal(nav)];
-        if (selector) {
-            args.push(PartArgument.literal(selector));
-        }
-
+    thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(nav: K1, selector?: K2[]): IExpandedODataQuery<TEntity, AU<TProperty[K1]>>;
+    thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(nav: K1, filter: Predicate<AU<TProperty[K1]>>, ...scopes): IExpandedODataQuery<TEntity, AU<TProperty[K1]>>;
+    thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(nav: K1, selector: K2[], filter: Predicate<AU<TProperty[K1]>>, ...scopes): IExpandedODataQuery<TEntity, AU<TProperty[K1]>>;
+    thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(nav: K1, prm1?: K2[] | Predicate<AU<TProperty[K1]>>, prm2?: Predicate<AU<TProperty[K1]>>, ...scopes): IExpandedODataQuery<TEntity, AU<TProperty[K1]>> {
+        const args = createExpandArgs(nav, prm1, prm2, scopes);
         return this.createExpandedQuery<any>(new QueryPart(ODataFuncs.thenExpand, args));
     }
 }
@@ -123,7 +121,9 @@ export interface IODataQuery<T> extends IQueryBase {
     where(predicate: Predicate<T>, ...scopes): IODataQuery<T>;
     orderBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
     orderByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T>;
-    expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, selector?: K2[]): IExpandedODataQuery<T, AU<T[K1]>>
+    expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, selector?: K2[]): IExpandedODataQuery<T, AU<T[K1]>>;
+    expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, filter: Predicate<AU<T[K1]>>, ...scopes): IExpandedODataQuery<T, AU<T[K1]>>;
+    expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, selector: K2[], filter: Predicate<AU<T[K1]>>, ...scopes): IExpandedODataQuery<T, AU<T[K1]>>;
     skip(count: number): IODataQuery<T>;
     take(count: number): IODataQuery<T>;
     cast(ctor: Ctor<T>): IODataQuery<T>;
@@ -142,6 +142,8 @@ export interface IOrderedODataQuery<T> extends IODataQuery<T> {
 
 export interface IExpandedODataQuery<TEntity, TProperty> extends IODataQuery<TEntity> {
     thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(nav: K1, selector?: K2[]): IExpandedODataQuery<TEntity, AU<TProperty[K1]>>;
+    thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(nav: K1, filter: Predicate<AU<TProperty[K1]>>, ...scopes): IExpandedODataQuery<TEntity, AU<TProperty[K1]>>;
+    thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(nav: K1, selector: K2[], filter: Predicate<AU<TProperty[K1]>>, ...scopes): IExpandedODataQuery<TEntity, AU<TProperty[K1]>>;
 }
 
 export const ODataFuncs = {
@@ -153,4 +155,19 @@ export const ODataFuncs = {
     apply: 'apply'
 };
 
+// Array Unwrapper
 type AU<T> = T extends Array<any> ? T[0] : T;
+
+function createExpandArgs(nav: any, prm1?: any, prm2?: any, ...scopes) {
+    let selector, filter;
+    if (typeof prm1 !== 'function' && typeof prm1 !== 'string') {
+        selector = prm1;
+        filter = prm2;
+    }
+    else {
+        filter = prm1;
+        scopes = prm2 ? [prm2, ...scopes] : scopes;
+    }
+    
+    return [PartArgument.literal(nav), PartArgument.literal(selector), PartArgument.identifier(filter, scopes)];
+}

@@ -173,15 +173,17 @@ describe('Service tests', () => {
     });
 
     it('should handle expand with multi level with repeated calls', () => {
+        const id = 42;
         const query = service.companies()
             .expand('addresses', ['city'])
-            .expand('addresses')
-                .thenExpand('city')
+            .expand('addresses', a => a.id > id, { id })
+                .thenExpand('city', c => c.name == 'Gotham')
                     .thenExpand('country');
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedUrl = `api/Companies?$expand=${encodeURIComponent('addresses($expand=city($expand=country))')}`;
+        const expectedPrm = "addresses($filter=id gt 42;$expand=city($filter=name eq 'Gotham';$expand=country))";
+        const expectedUrl = `api/Companies?$expand=${encodeURIComponent(expectedPrm)}`;
         expect(url).equal(expectedUrl);
     });
 
@@ -190,11 +192,11 @@ describe('Service tests', () => {
             .expand('addresses')
             .expand('addresses', ['city'])
                 .thenExpand('city', ['country'])
-                    .thenExpand('country', ['name']);
+                    .thenExpand('country', ['name'], c => c.name !== 'Gilead');
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedPrm = 'addresses($select=city;$expand=city($select=country;$expand=country($select=name)))';
+        const expectedPrm = "addresses($select=city;$expand=city($select=country;$expand=country($filter=name ne 'Gilead';$select=name)))";
         const expectedUrl = `api/Companies?$expand=${encodeURIComponent(expectedPrm)}`;
         expect(url).equal(expectedUrl);
     });
