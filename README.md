@@ -4,6 +4,12 @@
 [![Coverage Status](https://coveralls.io/repos/github/jin-qu/jinqu-odata/badge.svg?branch=master)](https://coveralls.io/github/jin-qu/jinqu-odata?branch=master)	
 [![npm version](https://badge.fury.io/js/jinqu-odata.svg)](https://badge.fury.io/js/jinqu-odata)
 <a href="https://snyk.io/test/npm/jinqu-odata"><img src="https://snyk.io/test/npm/jinqu-odata/badge.svg" alt="Known Vulnerabilities" data-canonical-src="https://snyk.io/test/npm/jinqu-odata" style="max-width:100%;"></a>
+[![GitHub issues](https://img.shields.io/github/issues/jin-qu/jinqu-odata.svg)](https://github.com/jin-qu/jinqu-odata/issues)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/jin-qu/jinqu-odata/master/LICENSE)
+
+[![GitHub stars](https://img.shields.io/github/stars/jin-qu/jinqu-odata.svg?style=social&label=Star)](https://github.com/jin-qu/jinqu-odata)
+[![GitHub forks](https://img.shields.io/github/forks/jin-qu/jinqu-odata.svg?style=social&label=Fork)](https://github.com/jin-qu/jinqu-odata)
+
 
 Jinqu-odata lets you write LINQ queries against an odata source. For those who don't know LINQ, the benefits are:
 
