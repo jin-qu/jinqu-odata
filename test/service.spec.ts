@@ -5,6 +5,8 @@ import chaiAsPromised = require('chai-as-promised');
 import { CompanyService, MockRequestProvider, ICompany, Company, getCompanies, ICountry, Country } from './fixture';
 import { ODataService } from '..';
 import { ODataQueryProvider } from '../lib/odata-query-provider';
+import { QueryPart, PartArgument } from 'jinqu';
+import { ODataFuncs, ODataQuery } from '../lib/odata-query';
 
 chai.use(chaiAsPromised);
 
@@ -35,6 +37,16 @@ describe('Service tests', () => {
 
     it('should throw for invalid callee', () => {
         const query = service.companies().where('c => c.id.toString()() == 1');
+        expect(() => query.toArrayAsync()).to.throw();
+    });
+
+    it('should throw for invalid thenExpand', async () => {
+        const part = new QueryPart(ODataFuncs.thenExpand, [
+            PartArgument.literal('fail'),
+            PartArgument.literal(null),
+            PartArgument.literal(null)
+        ]); 
+        const query = service.companies().provider.createQuery([part]) as ODataQuery<Company>;
         expect(() => query.toArrayAsync()).to.throw();
     });
 
@@ -126,6 +138,26 @@ describe('Service tests', () => {
         const url = provider.options.url;
         const expectedPrm = 'id eq 4 and (not addresses/any(a: a/id gt 1000) or addresses/all(a: a/id ge 1000))';
         const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it('should handle string filter parameter', async () => {
+        const query = service.companies()
+            .where('c => c.id === 4 && (!c.addresses.any(a => a.id > 1000) || c.addresses.all(a => a.id >= 1000))');
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedPrm = 'id eq 4 and (not addresses/any(a: a/id gt 1000) or addresses/all(a: a/id ge 1000))';
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it('should handle string filter parameter without lambda', async () => {
+        const query = service.companies().where('id === 4');
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent('id eq 4')}`;
         expect(url).equal(expectedUrl);
     });
 
