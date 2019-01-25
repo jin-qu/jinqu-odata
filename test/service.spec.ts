@@ -283,11 +283,15 @@ describe('Service tests', () => {
 
     it('should handle groupby with count aggregation', () => {
         const query = service.companies();
-        const promise = query.groupBy(c => ({ deleted: c.deleted }), g => ({ deleted: g.deleted, count: g.count() }));
+        const promise = query.groupBy(
+            c => ({ deleted: c.deleted, addresses: c.addresses }), 
+            g => ({ deleted: g.deleted, addressCount: g.addresses.count(), count: g.count() })
+        );
         expect(promise).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedUrl = `api/Companies?$apply=${encodeURIComponent('groupby((deleted),aggregate(deleted,$count as count))')}`;
+        const expectedPrm = 'groupby((deleted,addresses),aggregate(deleted,addresses/$count as addressCount,$count as count))';
+        const expectedUrl = `api/Companies?$apply=${encodeURIComponent(expectedPrm)}`;
         expect(url).equal(expectedUrl);
     });
 
