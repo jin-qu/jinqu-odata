@@ -106,7 +106,7 @@ describe('Service tests', () => {
         expect(url).equal(expectedUrl);
     });
 
-    it('should handle inline count', async () => {
+    it('should handle inlineCount', async () => {
         const value1 = [];
         const result1 = { 'odata.count': 100, value: value1 };
         const prv1 = new MockRequestProvider(result1);
@@ -115,8 +115,8 @@ describe('Service tests', () => {
         const url1 = prv1.options.url;
         const expectedUrl1 = `api/Companies?$count=true`;
         expect(url1).equal(expectedUrl1);
-        expect(response1).eq(value1);
-        expect(response1.$inlineCount).eq(100);
+        expect(response1.value).eq(value1);
+        expect(response1.inlineCount).eq(100);
 
         const value2 = [];
         const result2 = { value: value2 };
@@ -126,8 +126,20 @@ describe('Service tests', () => {
         const url2 = prv2.options.url;
         const expectedUrl2 = `api/Companies?$count=true`;
         expect(url2).equal(expectedUrl2);
-        expect(response2).eq(value2);
-        expect(response2.$inlineCount).is.undefined;
+        expect(response2.value).eq(value2);
+        expect(response2.inlineCount).is.NaN;
+    });
+
+    it('should includeResponse', async () => {
+        const value = [];
+        const prv = new MockRequestProvider(value);
+        const query = new CompanyService(prv).companies().includeResponse();
+        const response = await query.toArrayAsync();
+        const url = prv.options.url;
+        const expectedUrl = `api/Companies`;
+        expect(url).equal(expectedUrl);
+        expect(response.value).eq(value);
+        expect(response.response).property('body').eq(value);
     });
 
     it('should handle filter parameter', async () => {

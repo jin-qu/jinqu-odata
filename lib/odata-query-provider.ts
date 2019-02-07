@@ -4,7 +4,7 @@ import {
     LiteralExpression, VariableExpression, UnaryExpression,
     GroupExpression, AssignExpression, ObjectExpression,
     BinaryExpression, MemberExpression, FuncExpression,
-    CallExpression, TernaryExpression
+    CallExpression
 } from 'jokenizer';
 import { 
     IQueryPart, IRequestProvider, QueryFunc, AjaxFuncs, 
@@ -26,8 +26,8 @@ export class ODataQueryProvider implements IQueryProvider {
 
     private rootLambda = true;
 
-    createQuery<T extends object>(parts?: IQueryPart[]): ODataQuery<T> {
-        return new ODataQuery<T>(this, parts);
+    createQuery<T extends object, TResponse = any>(parts?: IQueryPart[]): ODataQuery<T, TResponse> {
+        return new ODataQuery<T, TResponse>(this, parts);
     }
 
     execute<T = any, TResult = PromiseLike<T[]>>(parts: IQueryPart[]): TResult {
@@ -39,6 +39,7 @@ export class ODataQueryProvider implements IQueryProvider {
             params = {},
             queryParams: QueryParameter[] = [];
         let inlineCount = false,
+            includeResponse = false,
             orders: IQueryPart[] = [],
             select: IQueryPart,
             expands: IQueryPart[] = [],
@@ -54,7 +55,10 @@ export class ODataQueryProvider implements IQueryProvider {
             }
             else if (part.type === QueryFunc.toArray || part.type === QueryFunc.first || part.type === QueryFunc.single) continue;
             else if (part.type === QueryFunc.inlineCount) {
-                inlineCount = part.args[0].literal !== false;
+                inlineCount = true;
+            }
+            else if (part.type === AjaxFuncs.includeResponse) {
+                includeResponse = true;
             }
             else if (part.type === ODataFuncs.oDataSelect) {
                 select = part;
@@ -118,7 +122,11 @@ export class ODataQueryProvider implements IQueryProvider {
         }
 
         if (inlineCount) {
-            queryParams.push({ key: '$inlinecount', value: 'true' });
+            queryParams.push({ key: QueryFunc.inlineCount, value: '' });
+        }
+
+        if (includeResponse) {
+            queryParams.push({ key: AjaxFuncs.includeResponse, value: '' });
         }
 
         for (var p in params) {

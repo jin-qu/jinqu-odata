@@ -10,17 +10,16 @@
 [![GitHub stars](https://img.shields.io/github/stars/jin-qu/jinqu-odata.svg?style=social&label=Star)](https://github.com/jin-qu/jinqu-odata)
 [![GitHub forks](https://img.shields.io/github/forks/jin-qu/jinqu-odata.svg?style=social&label=Fork)](https://github.com/jin-qu/jinqu-odata)
 
-
 Jinqu-odata lets you write LINQ queries against an odata source. For those who don't know LINQ, the benefits are:
 
- * A unified query language, whether querying local arrays, odata sources, or any other remote data source
- * Static typing where Typescript can verify your query is sound
+* A unified query language, whether querying local arrays, odata sources, or any other remote data source
+* Static typing where Typescript can verify your query is sound
 
 jinqu-odata is dependent on the [jinqu](https://github.com/jin-qu/jinqu) package.
 
 ## Installation
 
-```
+```shell
 npm install jinqu-odata
 ```
 
@@ -35,6 +34,7 @@ export class Book {
     Title: string
 }
 ```
+
 We can now query filtered books as follows:
 
 ```typescript
@@ -42,16 +42,18 @@ const service = new ODataService ("https://www.solenya.org/odata")
 
 const books = await service
     .createQuery(Book)
-    .where(b => b.Price > 60) 
+    .where(b => b.Price > 60)
     .toArrayAsync()
 
 for (var b of books)
     console.log (b)
 ```
+
 You can play with the live sample [here](https://stackblitz.com/edit/jinqu)
 
 The query is translated to the following odata url:
 ```
+
 https://www.solenya.org/odata/Books?$filter=Price gt 60
 ```
 
@@ -181,11 +183,12 @@ const result = await query.skip(20).take(10).toArrayAsync()
 
 ### InlineCount
 
-We can use the `inlineCount` operator to populate the `$inlineCount` property on the results.
+We can use the `inlineCount` operator to include the `inlineCount` property on the results. This will cause query to wrap result.
 
 ```typescript
 const result = await query.inlineCount().toArrayAsync()
-const inlineCount = result.$inlineCount // only populated if inlineCount operator was called
+const value = result.value
+const inlineCount = result.inlineCount // only populated if inlineCount operator was called
 ```
 
 This is useful in the preceding `skip/take` scenario, where to implement paging, we'd like the result to include a total non-paged count, without having to write a separate query. Just add the `inlineCount` operator before calling `skip/take`.
@@ -195,12 +198,12 @@ This is useful in the preceding `skip/take` scenario, where to implement paging,
 jinqu-odata supports expand, which enables you to pull in related entities. In this example, we don't merely want to return books; we also want to return the press associated with each book. We can do this as follows:
 
 ```typescript
- const companies = await service
-      .createQuery(Book)      
-      .expand("Press")
-      .toArrayAsync()
-          
-  // books$expand=Press
+const companies = await service
+    .createQuery(Book)
+    .expand("Press")
+    .toArrayAsync()
+
+// books$expand=Press
 ```
 
 ### Nested Expand
@@ -210,26 +213,27 @@ Sometimes we want to drill down more than one level. In this example, our odata 
 ```typescript
 @oDataResource('Books')
 export class Book {
-  Title: string
-  @Type(() => AuthorBook) AuthorBooks: AuthorBook[]
+    Title: string
+    @Type(() => AuthorBook) AuthorBooks: AuthorBook[]
 }
 
 export class AuthorBook {
-  @Type(() => Author) Author: Author
+    @Type(() => Author) Author: Author
 }
 
 export class Author {
-  Name: string
+    Name: string
 }
 ```
+
 To query, we first `expand` the `AuthorBooks` property, and `thenExpand` the `Book` property, as follows:
 
 ```typescript
- const books = await service
-      .createQuery(Book)      
-      .expand("AuthorBooks")
-        .thenExpand("Author")
-      .toArrayAsync()
+const books = await service
+    .createQuery(Book)
+    .expand("AuthorBooks")
+    .thenExpand("Author")
+    .toArrayAsync()
 
 // books?$expand=AuthorBooks($expand=Author)
 ```
@@ -239,19 +243,20 @@ To query, we first `expand` the `AuthorBooks` property, and `thenExpand` the `Bo
 For efficiency, we can **filter by rows** an `expand`/`thenExpand` query by providing a predicate:
 
 ```typescript
-  .thenExpand("Author") // no filter
-  .thenExpand("Author", a => a.endsWith ("Albahari")) // filtered
-  
-  // books?$expand=AuthorBooks($expand=Author($filter=endswith(Name,'Albahari')))
-````
+.thenExpand("Author") // no filter
+.thenExpand("Author", a => a.endsWith ("Albahari")) // filtered
+
+// books?$expand=AuthorBooks($expand=Author($filter=endswith(Name,'Albahari')))
+```
+
 Similarly, for efficiency, we can **filter by columns** an `expand`/`thenExpand` query by providing an array of column names:
 
 ```typescript
-  .thenExpand("Author") // no filter
-  .thenExpand("Author", ["Name"]) // filtered columns
+.thenExpand("Author") // no filter
+.thenExpand("Author", ["Name"]) // filtered columns
 
-  // books?$expand=AuthorBooks($expand=Author($select=Name))
- ```
+// books?$expand=AuthorBooks($expand=Author($select=Name))
+```
 
 #### Deserialization
 

@@ -1,17 +1,19 @@
-import { AjaxOptions, IAjaxProvider } from 'jinqu';
+import { AjaxOptions, IAjaxProvider, Value, AjaxResponse } from 'jinqu';
 import { ODataService } from '..';
 import { oDataResource } from '../lib/decorators';
 
-export class MockRequestProvider implements IAjaxProvider {
+export class MockRequestProvider implements IAjaxProvider<Response> {
 
     constructor(private readonly result = null) {
     }
 
     options: AjaxOptions;
 
-    ajax<T>(options: AjaxOptions) {
+    ajax<T>(options: AjaxOptions): PromiseLike<Value<T> & AjaxResponse<Response>> {
         this.options = options;
-        return new Promise<T>(resolve => resolve(this.result));
+        const response = <Response>{ body: this.result };
+        const result = { value: this.result, response };
+        return Promise.resolve(result);
     }
 }
 
