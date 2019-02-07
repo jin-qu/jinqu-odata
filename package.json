@@ -1,6 +1,6 @@
 {
   "name": "jinqu-odata",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Jinqu OData implementation",
   "main": "dist/index.js",
   "keywords": [
@@ -47,8 +47,8 @@
     "typescript": "^3.0.3"
   },
   "dependencies": {
-    "jinqu": "^0.5.1",
-    "jinqu-fetch": "^0.2.0",
+    "jinqu": "^0.6.0",
+    "jinqu-fetch": "^0.3.0",
     "jokenizer": "^0.2.6"
   }
 }
