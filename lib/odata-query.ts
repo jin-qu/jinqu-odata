@@ -2,7 +2,7 @@ import {
     IQueryProvider, IQueryPart, Predicate, Func1, IQueryBase, 
     QueryPart, PartArgument, AjaxOptions, AjaxFuncs, Ctor, Result, AjaxResponse
 } from "jinqu";
-import { InlineCountInfo } from "jinqu/lib/types";
+import { InlineCountInfo } from "jinqu";
 
 export class ODataQuery<T extends object, TResponse = any, TExtra = {}> implements IODataQuery<T, TExtra> {
 
