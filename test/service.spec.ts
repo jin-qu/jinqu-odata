@@ -2,11 +2,9 @@ import { expect } from 'chai';
 import 'mocha';
 import chai = require('chai');
 import chaiAsPromised = require('chai-as-promised');
-import { CompanyService, MockRequestProvider, ICompany, Company, getCompanies, ICountry, Country } from './fixture';
-import { ODataService } from '..';
-import { ODataQueryProvider } from '../lib/odata-query-provider';
 import { QueryPart, PartArgument } from 'jinqu';
-import { ODataFuncs, ODataQuery } from '../lib/odata-query';
+import { ODataService, ODataQueryProvider, ODataFuncs, ODataQuery } from '../index';
+import { CompanyService, MockRequestProvider, ICompany, Company, getCompanies, ICountry, Country } from './fixture';
 
 chai.use(chaiAsPromised);
 
@@ -45,7 +43,7 @@ describe('Service tests', () => {
             PartArgument.literal('fail'),
             PartArgument.literal(null),
             PartArgument.literal(null)
-        ]); 
+        ]);
         const query = service.companies().provider.createQuery([part]) as ODataQuery<Company>;
         expect(() => query.toArrayAsync()).to.throw();
     });
@@ -204,11 +202,11 @@ describe('Service tests', () => {
     it('should handle expand with multi level', () => {
         const q = service.companies();
         q.expand('addresses', ['city', 'id']);
-        
+
         const query = service.companies()
             .expand('addresses')
-                .thenExpand('city')
-                    .thenExpand('country');
+            .thenExpand('city')
+            .thenExpand('country');
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -221,8 +219,8 @@ describe('Service tests', () => {
         const query = service.companies()
             .expand('addresses', ['city'])
             .expand('addresses', a => a.id > id, { id })
-                .thenExpand('city', c => c.name == 'Gotham')
-                    .thenExpand('country');
+            .thenExpand('city', c => c.name == 'Gotham')
+            .thenExpand('country');
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -235,8 +233,8 @@ describe('Service tests', () => {
         const query = service.companies()
             .expand('addresses')
             .expand('addresses', ['city'])
-                .thenExpand('city', ['country'])
-                    .thenExpand('country', ['name'], c => c.name !== 'Gilead');
+            .thenExpand('city', ['country'])
+            .thenExpand('country', ['name'], c => c.name !== 'Gilead');
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -248,8 +246,8 @@ describe('Service tests', () => {
     it('should handle expand with multi level with repeated calls and deep expands with selects', () => {
         const query = service.companies()
             .expand('addresses', ['city'])
-                .thenExpand('city')
-                    .thenExpand('country', ['name']);
+            .thenExpand('city')
+            .thenExpand('country', ['name']);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -296,7 +294,7 @@ describe('Service tests', () => {
     it('should handle groupby with count aggregation', () => {
         const query = service.companies();
         const promise = query.groupBy(
-            c => ({ deleted: c.deleted, addresses: c.addresses }), 
+            c => ({ deleted: c.deleted, addresses: c.addresses }),
             g => ({ deleted: g.deleted, addressCount: g.addresses.count(), count: g.count() })
         );
         expect(promise).to.be.fulfilled.and.eventually.be.null;
