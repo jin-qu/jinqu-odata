@@ -58,6 +58,6 @@
   "dependencies": {
     "jinqu": "^0.6.0",
     "jinqu-fetch": "^0.3.0",
-    "jokenizer": "^0.2.6"
+    "jokenizer": "^0.3.0"
   }
 }

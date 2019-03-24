@@ -1,6 +1,6 @@
 const browsers = process.platform === "win32"
-    ? ['ChromeHeadless', 'FirefoxHeadless', 'IE']
-    : ['ChromeHeadless', 'FirefoxHeadless'];
+    ? ["ChromeHeadless", "FirefoxHeadless", "IE"]
+    : ["ChromeHeadless", "FirefoxHeadless"];
 
 module.exports = function (config) {
     config.set({
