@@ -1,103 +1,97 @@
-import { plainToClass } from 'class-transformer';
+import { plainToClass } from "class-transformer";
 import {
-    ExpressionType, Expression,
-    LiteralExpression, VariableExpression, UnaryExpression,
-    GroupExpression, AssignExpression, ObjectExpression,
-    BinaryExpression, MemberExpression, FuncExpression,
-    CallExpression
-} from 'jokenizer';
-import { 
-    IQueryPart, IRequestProvider, QueryFunc, AjaxFuncs, 
-    AjaxOptions, IQueryProvider, QueryParameter, IPartArgument, Ctor 
-} from 'jinqu';
-import { ODataQuery, ODataFuncs } from './odata-query';
+    AjaxFuncs, AjaxOptions, Ctor, IPartArgument,
+    IQueryPart, IQueryProvider, IRequestProvider, QueryFunc, QueryParameter,
+} from "jinqu";
+import {
+    AssignExpression, BinaryExpression,
+    CallExpression, Expression, ExpressionType,
+    FuncExpression, GroupExpression, LiteralExpression,
+    MemberExpression, ObjectExpression, UnaryExpression,
+    VariableExpression,
+} from "jokenizer";
+import { ODataFuncs, ODataQuery } from "./odata-query";
 
 const orderFuncs = [QueryFunc.orderBy, QueryFunc.orderByDescending];
 const thenFuncs = [QueryFunc.thenBy, QueryFunc.thenByDescending];
 const descFuncs = [QueryFunc.orderByDescending, QueryFunc.thenByDescending];
 const otherFuncs = [QueryFunc.inlineCount, QueryFunc.skip, QueryFunc.count, ODataFuncs.filter, ODataFuncs.top];
-const mathFuncs = ['round', 'floor', 'ceiling'];
-const aggregateFuncs = ['sum', 'max', 'min'];
+const mathFuncs = ["round", "floor", "ceiling"];
+const aggregateFuncs = ["sum", "max", "min"];
 
 export class ODataQueryProvider implements IQueryProvider {
+    private rootLambda = true;
 
     constructor(protected requestProvider: IRequestProvider<AjaxOptions>) {
     }
 
-    private rootLambda = true;
-
-    createQuery<T extends object, TResponse = any>(parts?: IQueryPart[]): ODataQuery<T, TResponse> {
+    public createQuery<T extends object, TResponse = any>(parts?: IQueryPart[]): ODataQuery<T, TResponse> {
         return new ODataQuery<T, TResponse>(this, parts);
     }
 
-    execute<T = any, TResult = PromiseLike<T[]>>(parts: IQueryPart[]): TResult {
-        throw new Error('Synchronous execution is not supported');
+    public execute<T = any, TResult = PromiseLike<T[]>>(parts: IQueryPart[]): TResult {
+        throw new Error("Synchronous execution is not supported");
     }
 
-    executeAsync<T = any, TResult = T[]>(parts: IQueryPart[]): PromiseLike<TResult> {
-        const options: AjaxOptions[] = [],
-            params = {},
-            queryParams: QueryParameter[] = [];
-        let inlineCount = false,
-            includeResponse = false,
-            orders: IQueryPart[] = [],
-            select: IQueryPart,
-            expands: IQueryPart[] = [],
-            apply: IQueryPart,
-            ctor: Ctor<any>;
+    public executeAsync<T = any, TResult = T[]>(parts: IQueryPart[]): PromiseLike<TResult> {
+        const options: AjaxOptions[] = [];
+        const params = {};
+        const queryParams: QueryParameter[] = [];
+        const expands: IQueryPart[] = [];
+        let inlineCount = false;
+        let includeResponse = false;
+        let orders: IQueryPart[] = [];
+        let select: IQueryPart;
+        let apply: IQueryPart;
+        let ctor: Ctor<any>;
 
-        for (let part of parts) {
+        for (const part of parts) {
             if (part.type === AjaxFuncs.options) {
                 options.push(part.args[0].literal);
-            }
-            else if (part.type === QueryFunc.cast) {
+            } else if (part.type === QueryFunc.cast) {
                 ctor = part.args[0].literal;
-            }
-            else if (part.type === QueryFunc.toArray || part.type === QueryFunc.first || part.type === QueryFunc.single) continue;
-            else if (part.type === QueryFunc.inlineCount) {
+            } else if (part.type === QueryFunc.toArray
+                || part.type === QueryFunc.first
+                || part.type === QueryFunc.single) {
+                continue;
+            } else if (part.type === QueryFunc.inlineCount) {
                 inlineCount = true;
-            }
-            else if (part.type === AjaxFuncs.includeResponse) {
+            } else if (part.type === AjaxFuncs.includeResponse) {
                 includeResponse = true;
-            }
-            else if (part.type === ODataFuncs.oDataSelect) {
+            } else if (part.type === ODataFuncs.oDataSelect) {
                 select = part;
-            }
-            else if (part.type === ODataFuncs.expand || part.type === ODataFuncs.thenExpand) {
+            } else if (part.type === ODataFuncs.expand || part.type === ODataFuncs.thenExpand) {
                 expands.push(part);
-            }
-            else if (part.type === ODataFuncs.apply) {
+            } else if (part.type === ODataFuncs.apply) {
                 ctor = null;
                 apply = part;
-            }
-            else if (~orderFuncs.indexOf(part.type)) {
+            } else if (orderFuncs.indexOf(part.type) !== -1) {
                 orders = [part];
-            }
-            else if (~thenFuncs.indexOf(part.type)) {
+            } else if (thenFuncs.indexOf(part.type) !== -1) {
                 orders.push(part);
-            }
-            else if (~otherFuncs.indexOf(part.type)) {
+            } else if (otherFuncs.indexOf(part.type) !== -1) {
                 params[part.type] = part.args[0];
+            } else {
+                throw new Error(`${part.type} is not supported.`);
             }
-            else throw new Error(`${part.type} is not supported.`);
         }
 
         if (orders.length) {
-            const value = orders.map(o => {
+            const value = orders.map((o) => {
                 const v = this.handlePartArg(o.args[0]);
-                return ~descFuncs.indexOf(o.type) ? (v + ' desc') : v;
-            }).join(',');
-            queryParams.push({ key: '$orderby', value });
+                return descFuncs.indexOf(o.type) !== -1 ? (v + " desc") : v;
+            }).join(",");
+            queryParams.push({ key: "$orderby", value });
         }
 
         if (select) {
-            queryParams.push({ key: '$select', value: select.args[0].literal.join(',') });
+            queryParams.push({ key: "$select", value: select.args[0].literal.join(",") });
         }
-        
+
         if (expands.length) {
             const es: ExpandCollection = {};
             let ce: ExpandContainer;
-            expands.forEach(e => {
+            expands.forEach((e) => {
                 const exp = e.args[0].literal;
                 const sel = e.args[1].literal;
                 const fil = this.handlePartArg(e.args[2]);
@@ -105,66 +99,69 @@ export class ODataQueryProvider implements IQueryProvider {
                 let col: ExpandCollection;
                 if (e.type === ODataFuncs.expand) {
                     col = es;
-                }
-                else {
-                    if (!ce) throw new Error('"thenExpand" must be called after an "expand".');
+                } else {
+                    if (!ce) {
+                        throw new Error("'thenExpand' must be called after an 'expand'.");
+                    }
 
                     col = ce.children;
                 }
 
-                ce = col[exp] || (col[exp] = { children: {} });
+                ce = col[exp] || (col[exp] = { children: {} });
                 col = ce.children;
                 ce.select = sel;
                 ce.filter = fil;
             });
 
-            queryParams.push({ key: '$expand', value: walkExpands(es) });
+            queryParams.push({ key: "$expand", value: walkExpands(es) });
         }
 
         if (inlineCount) {
-            queryParams.push({ key: QueryFunc.inlineCount, value: '' });
+            queryParams.push({ key: QueryFunc.inlineCount, value: "" });
         }
 
         if (includeResponse) {
-            queryParams.push({ key: AjaxFuncs.includeResponse, value: '' });
+            queryParams.push({ key: AjaxFuncs.includeResponse, value: "" });
         }
 
-        for (var p in params) {
-            queryParams.push({ key: '$' + p, value: this.handlePartArg(params[p]) });
+        for (const p in params) {
+            if (params.hasOwnProperty(p)) {
+                queryParams.push({ key: "$" + p, value: this.handlePartArg(params[p]) });
+            }
         }
 
         if (apply) {
             const keySelector = this.handlePartArg(apply.args[0]);
             const valueSelector = apply.args[1] && this.handlePartArg(apply.args[1]);
             if (valueSelector) {
-                queryParams.push({ key: '$apply', value: `groupby((${keySelector}),aggregate(${valueSelector}))` });
-            }
-            else {
-                queryParams.push({ key: '$apply', value: `groupby((${keySelector}))` });
+                queryParams.push({ key: "$apply", value: `groupby((${keySelector}),aggregate(${valueSelector}))` });
+            } else {
+                queryParams.push({ key: "$apply", value: `groupby((${keySelector}))` });
             }
         }
 
         const promise = this.requestProvider.request<TResult>(queryParams, options);
         return ctor
-            ? promise.then(d => plainToClass(ctor, d))
+            ? promise.then((d) => plainToClass(ctor, d))
             : promise;
     }
 
-    handlePartArg(arg: IPartArgument): string {
+    public handlePartArg(arg: IPartArgument): string {
         return arg.literal != null || arg.exp == null
             ? arg.literal
             : this.handleExp(arg.exp, arg.scopes);
     }
 
-    handleExp(exp: Expression, scopes: any[]) {
+    public handleExp(exp: Expression, scopes: any[]) {
         const rl = this.rootLambda;
         this.rootLambda = true;
-        const retVal = this.expToStr(exp, scopes, exp.type === ExpressionType.Func ? (exp as FuncExpression).parameters : []);
+        const parameters = exp.type === ExpressionType.Func ? (exp as FuncExpression).parameters : [];
+        const retVal = this.expToStr(exp, scopes, parameters);
         this.rootLambda = rl;
         return retVal;
     }
 
-    expToStr(exp: Expression, scopes: any[], parameters: string[]): string {
+    public expToStr(exp: Expression, scopes: any[], parameters: string[]): string {
         switch (exp.type) {
             case ExpressionType.Literal:
                 return this.literalToStr(exp as LiteralExpression);
@@ -178,8 +175,9 @@ export class ODataQueryProvider implements IQueryProvider {
                 // but we have to use that syntax to use ObjectExpression with lambdas
                 // so, we unwrap groups if they contain only one ObjectExpression
                 const gexp = exp as GroupExpression;
-                if (gexp.expressions.length === 1 && gexp.expressions[0].type === ExpressionType.Object)
+                if (gexp.expressions.length === 1 && gexp.expressions[0].type === ExpressionType.Object) {
                     return this.expToStr(gexp.expressions[0], scopes, parameters);
+                }
 
                 return this.groupToStr(gexp, scopes, parameters);
             case ExpressionType.Object:
@@ -197,35 +195,37 @@ export class ODataQueryProvider implements IQueryProvider {
         }
     }
 
-    literalToStr(exp: LiteralExpression) {
+    public literalToStr(exp: LiteralExpression) {
         return this.valueToStr(exp.value);
     }
 
-    variableToStr(exp: VariableExpression, scopes: any[], parameters: string[]) {
+    public variableToStr(exp: VariableExpression, scopes: any[], parameters: string[]) {
         const name = exp.name;
-        if (~parameters.indexOf(name)) return '';
+        if (parameters.indexOf(name) !== -1) {
+            return "";
+        }
 
-        const s = scopes && scopes.find(s => name in s);
-        return (s && this.valueToStr(s[name])) || name;
+        const scope = scopes && scopes.find((s) => name in s);
+        return (scope && this.valueToStr(scope[name])) || name;
     }
 
-    unaryToStr(exp: UnaryExpression, scopes: any[], parameters: string[]) {
+    public unaryToStr(exp: UnaryExpression, scopes: any[], parameters: string[]) {
         return `${getUnaryOp(exp.operator)}${this.expToStr(exp.target, scopes, parameters)}`;
     }
 
-    groupToStr(exp: GroupExpression, scopes: any[], parameters: string[]) {
-        return `(${exp.expressions.map(e => this.expToStr(e, scopes, parameters)).join(',')})`;
+    public groupToStr(exp: GroupExpression, scopes: any[], parameters: string[]) {
+        return `(${exp.expressions.map((e) => this.expToStr(e, scopes, parameters)).join(",")})`;
     }
 
-    objectToStr(exp: ObjectExpression, scopes: any[], parameters: string[]) {
-        return exp.members.map(m => {
+    public objectToStr(exp: ObjectExpression, scopes: any[], parameters: string[]) {
+        return exp.members.map((m) => {
             const ae = m as AssignExpression;
             const e = this.expToStr(ae.right, scopes, parameters);
             return e === ae.name ? e : `${e} as ${ae.name}`;
-        }).join(',');
+        }).join(",");
     }
 
-    binaryToStr(exp: BinaryExpression, scopes: any[], parameters: string[]) {
+    public binaryToStr(exp: BinaryExpression, scopes: any[], parameters: string[]) {
         const left = this.expToStr(exp.left, scopes, parameters);
         const op = getBinaryOp(exp.operator);
         const right = this.expToStr(exp.right, scopes, parameters);
@@ -233,44 +233,50 @@ export class ODataQueryProvider implements IQueryProvider {
         return `${left} ${op} ${right}`;
     }
 
-    memberToStr(exp: MemberExpression, scopes: any[], parameters: string[]) {
+    public memberToStr(exp: MemberExpression, scopes: any[], parameters: string[]) {
         const owner = this.expToStr(exp.owner, scopes, parameters);
-        if (exp.name === 'length')
+        if (exp.name === "length") {
             return `length(${owner})`;
+        }
 
         return owner ? `${owner}/${exp.name}` : exp.name;
     }
 
-    funcToStr(exp: FuncExpression, scopes: any[], parameters: string[]) {
+    public funcToStr(exp: FuncExpression, scopes: any[], parameters: string[]) {
         const rl = this.rootLambda;
         this.rootLambda = false;
-        const prm = rl ? '' : (exp.parameters.join(',') + ': ');
+        const prm = rl ? "" : (exp.parameters.join(",") + ": ");
         const body = this.expToStr(exp.body, scopes, parameters);
         return prm + body;
     }
 
-    callToStr(exp: CallExpression, scopes: any[], parameters: string[]) {
+    public callToStr(exp: CallExpression, scopes: any[], parameters: string[]) {
         const callee = exp.callee as MemberExpression;
-        if (callee.type !== ExpressionType.Member)
+        if (callee.type !== ExpressionType.Member) {
             throw new Error(`Invalid function call ${this.expToStr(exp.callee, scopes, parameters)}`);
+        }
 
         let args: string;
         const member = callee as MemberExpression;
         const ownerStr = this.expToStr(member.owner, scopes, parameters);
 
-        if (member.name === 'count')
-            return ownerStr ? `${ownerStr}/$count` : '$count';
+        if (member.name === "count") {
+            return ownerStr ? `${ownerStr}/$count` : "$count";
+        }
 
-        if (~aggregateFuncs.indexOf(member.name))
+        if (aggregateFuncs.indexOf(member.name) !== -1) {
             return `${this.handleExp(exp.args[0], scopes)} with ${member.name}`;
+        }
 
-        args = exp.args.map(a => this.expToStr(a, scopes, parameters)).join(',');
+        args = exp.args.map((a) => this.expToStr(a, scopes, parameters)).join(",");
         // handle Math functions
-        if (~mathFuncs.indexOf(callee.name) && ownerStr === 'Math')
+        if (mathFuncs.indexOf(callee.name) !== -1 && ownerStr === "Math") {
             return `${callee.name}(${args})`;
+        }
         // any and all are the only functions which can be called on owner
-        if (callee.name === 'any' || callee.name === 'all')
+        if (callee.name === "any" || callee.name === "all") {
             return `${ownerStr}/${callee.name}(${args})`;
+        }
 
         // other supported functions takes owner as the first argument
         args = args ? `${ownerStr},${args}` : ownerStr;
@@ -279,14 +285,18 @@ export class ODataQueryProvider implements IQueryProvider {
         return `${oDataFunc}(${args})`;
     }
 
-    valueToStr(value) {
-        if (Object.prototype.toString.call(value) === '[object Date]')
+    public valueToStr(value) {
+        if (Object.prototype.toString.call(value) === "[object Date]") {
             return `datetime'${value.toISOString()}'`;
+        }
 
-        if (value == null)
-            return 'null';
-        if (typeof value === 'string')
+        if (value == null) {
+            return "null";
+        }
+
+        if (typeof value === "string") {
             return `'${value.replace(/'/g, "''")}'`;
+        }
 
         return value;
     }
@@ -294,52 +304,58 @@ export class ODataQueryProvider implements IQueryProvider {
 
 function getBinaryOp(op: string) {
     switch (op) {
-        case '==':
-        case '===': return 'eq';
-        case '!=':
-        case '!==': return 'ne';
-        case '>': return 'gt';
-        case '>=': return 'ge';
-        case '<': return 'lt';
-        case '<=': return 'le';
-        case '+': return 'add';
-        case '-': return 'sub';
-        case '*': return 'mul';
-        case '/': return 'div';
-        case '%': return 'mod';
-        case '&&': return 'and';
-        case '||': return 'or';
+        case "==":
+        case "===": return "eq";
+        case "!=":
+        case "!==": return "ne";
+        case ">": return "gt";
+        case ">=": return "ge";
+        case "<": return "lt";
+        case "<=": return "le";
+        case "+": return "add";
+        case "-": return "sub";
+        case "*": return "mul";
+        case "/": return "div";
+        case "%": return "mod";
+        case "&&": return "and";
+        case "||": return "or";
         default: return op;
     }
 }
 
 function getUnaryOp(op) {
-    if (op === '!') return 'not ';
+    if (op === "!") {
+        return "not ";
+    }
 
     return op;
 }
 
 const functions = {
-    'includes': 'contains',
-    'substr': 'substring',
-    'toLowerCase': 'tolower',
-    'toUpperCase': 'toupper',
-    'getDate': 'day',
-    'getHours': 'hour',
-    'getMinutes': 'minute',
-    'getMonth': 'month',
-    'getSeconds': 'second',
-    'getFullYear': 'year'
+    getDate: "day",
+    getFullYear: "year",
+    getHours: "hour",
+    getMinutes: "minute",
+    getMonth: "month",
+    getSeconds: "second",
+    includes: "contains",
+    substr: "substring",
+    toLowerCase: "tolower",
+    toUpperCase: "toupper",
 };
 
-type ExpandContainer = { select?: string, filter?: string, children: ExpandCollection };
-type ExpandCollection = { [expand: string]: ExpandContainer };
+interface ExpandContainer { select?: string; filter?: string; children: ExpandCollection; }
+interface ExpandCollection { [expand: string]: ExpandContainer; }
 
 function walkExpands(e: ExpandCollection) {
     const expStrs = [];
     for (const p in e) {
+        if (!e.hasOwnProperty(p)) {
+            continue;
+        }
+
         const exp = e[p];
-        let childStr = walkExpands(exp.children);
+        const childStr = walkExpands(exp.children);
 
         const subStrs = [];
         if (exp.filter) {
@@ -351,12 +367,12 @@ function walkExpands(e: ExpandCollection) {
         if (childStr) {
             subStrs.push(`$expand=${childStr}`);
         }
-        
+
         const expStr = subStrs.length
-            ? `${p}(${subStrs.join(';')})`
+            ? `${p}(${subStrs.join(";")})`
             : p;
         expStrs.push(expStr);
     }
-    
-    return expStrs.join(',');
+
+    return expStrs.join(",");
 }
