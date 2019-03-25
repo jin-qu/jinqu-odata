@@ -1,12 +1,13 @@
-const browsers = process.platform === "win32"
-    ? ["ChromeHeadless", "FirefoxHeadless", "IE"]
-    : ["ChromeHeadless", "FirefoxHeadless"];
+const browsers = process.platform === "win32" ?
+    ["ChromeHeadless", "FirefoxHeadless", "IE"] :
+    ["ChromeHeadless", "FirefoxHeadless"];
 
 module.exports = function (config) {
     config.set({
-        frameworks: ["mocha", "karma-typescript"],
+        frameworks: ["mocha", "chai", "karma-typescript"],
 
-        files: ["index.ts",
+        files: [
+            "index.ts",
             {
                 pattern: "lib/**/*.ts"
             },
@@ -27,7 +28,7 @@ module.exports = function (config) {
                 "./test/**/*.ts"
             ]
         },
-    
+
         reporters: ["dots", "karma-typescript"],
 
         browsers,

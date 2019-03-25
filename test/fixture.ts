@@ -1,6 +1,5 @@
 import { AjaxOptions, IAjaxProvider, Value, AjaxResponse } from 'jinqu';
-import { ODataService } from '..';
-import { oDataResource } from '../lib/decorators';
+import { ODataService, oDataResource } from '../index';
 
 export class MockRequestProvider implements IAjaxProvider<Response> {
 
