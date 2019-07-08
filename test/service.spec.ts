@@ -4,6 +4,7 @@ import { expect } from "chai";
 import chai = require("chai");
 import chaiAsPromised = require("chai-as-promised");
 import { PartArgument, QueryPart } from "jinqu";
+import "jinqu-array-extensions";
 import "mocha";
 
 import { ODataFuncs, ODataQuery, ODataQueryProvider, ODataService } from "../index";
