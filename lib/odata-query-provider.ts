@@ -235,11 +235,20 @@ export class ODataQueryProvider implements IQueryProvider {
 
     public memberToStr(exp: MemberExpression, scopes: any[], parameters: string[]) {
         const owner = this.expToStr(exp.owner, scopes, parameters);
+
+        if (!owner) {
+            return exp.name;
+        }
+
+        if (typeof owner === "object") {
+            return this.valueToStr(owner[exp.name]);
+        }
+
         if (exp.name === "length") {
             return `length(${owner})`;
         }
 
-        return owner ? `${owner}/${exp.name}` : exp.name;
+        return `${owner}/${exp.name}`;
     }
 
     public funcToStr(exp: FuncExpression, scopes: any[], parameters: string[]) {

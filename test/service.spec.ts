@@ -219,11 +219,12 @@ describe("Service tests", () => {
     });
 
     it("should handle expand with multi level with repeated calls", () => {
+        const options = { city: "Gotham" };
         const id = 42;
         const query = service.companies()
             .expand("addresses", ["city"])
             .expand("addresses", (a) => a.id > id, { id })
-            .thenExpand("city", (c) => c.name === "Gotham")
+            .thenExpand("city", (c) => c.name === options.city, { options })
             .thenExpand("country");
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 

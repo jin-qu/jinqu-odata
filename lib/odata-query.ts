@@ -51,7 +51,7 @@ export class ODataQuery<T extends object, TResponse = any, TExtra = {}> implemen
     public expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(
         nav: K1, prm1?: K2[] | Predicate<AU<T[K1]>>, prm2?: Predicate<AU<T[K1]>>, ...scopes)
             : IExpandedODataQuery<T, AU<T[K1]>, TExtra> {
-        const args = createExpandArgs(nav, prm1, prm2, scopes);
+        const args = createExpandArgs(nav, prm1, prm2, ...scopes);
         return this.createExpandedQuery<AU<T[K1]>>(new QueryPart(ODataFuncs.expand, args));
     }
 
@@ -137,7 +137,7 @@ class ExpandedODataQuery<TEntity extends object, TProperty, TResponse = any, TEx
     public thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(
         nav: K1, prm1?: K2[] | Predicate<AU<TProperty[K1]>>, prm2?: Predicate<AU<TProperty[K1]>>, ...scopes)
         : IExpandedODataQuery<TEntity, AU<TProperty[K1]>, TExtra> {
-        const args = createExpandArgs(nav, prm1, prm2, scopes);
+        const args = createExpandArgs(nav, prm1, prm2, ...scopes);
         return this.createExpandedQuery<any>(new QueryPart(ODataFuncs.thenExpand, args));
     }
 }
