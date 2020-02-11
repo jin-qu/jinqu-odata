@@ -4,6 +4,7 @@ import {
     PartArgument, Predicate, QueryPart, Result,
 } from "jinqu";
 import { InlineCountInfo } from "jinqu";
+import { handleParts, ODataFuncs } from "./shared";
 
 export class ODataQuery<T extends object, TResponse = any, TExtra = {}> implements IODataQuery<T, TExtra> {
 
@@ -95,6 +96,11 @@ export class ODataQuery<T extends object, TResponse = any, TExtra = {}> implemen
         return (query.provider as any).executeAsync([...query.parts, QueryPart.toArray()]);
     }
 
+    public toString() {
+        const [queryParams] = handleParts(this.parts);
+        return queryParams.map((p) => `${p.key}=${p.value}`).join("&");
+    }
+
     protected create<TResult extends object = T, TNewExtra = TExtra>(part: IQueryPart)
         : IODataQuery<TResult, TNewExtra> {
         return new ODataQuery<TResult, TResponse, TNewExtra>(this.provider, [...this.parts, part]);
@@ -181,15 +187,6 @@ export interface IExpandedODataQuery<TEntity, TProperty, TExtra = {}> extends IO
         nav: K1, selector: K2[], filter: Predicate<AU<TProperty[K1]>>, ...scopes)
         : IExpandedODataQuery<TEntity, AU<TProperty[K1]>, TExtra>;
 }
-
-export const ODataFuncs = {
-    apply: "apply",
-    expand: "expand",
-    filter: "filter",
-    oDataSelect: "oDataSelect",
-    thenExpand: "thenExpand",
-    top: "top",
-};
 
 // Array Unwrapper
 type AU<T> = T extends any[] ? T[0] : T;

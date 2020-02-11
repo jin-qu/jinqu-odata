@@ -7,7 +7,8 @@ import { PartArgument, QueryPart } from "jinqu";
 import "jinqu-array-extensions";
 import "mocha";
 
-import { ODataFuncs, ODataQuery, ODataQueryProvider, ODataService } from "../index";
+import { ODataQuery, ODataQueryProvider, ODataService } from "../index";
+import { ODataFuncs } from "../lib/shared";
 import { Company, CompanyService, Country, getCompanies, ICompany, ICountry, MockRequestProvider } from "./fixture";
 
 chai.use(chaiAsPromised);
@@ -401,6 +402,9 @@ describe("Service tests", () => {
         const expectedPrm = "((id add 4 sub 2) mul 4 div 2) mod 2 eq 1 and id ne 42 and -id ne 19";
         const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
         expect(url).equal(expectedUrl);
+
+        const expectedQuery = `$filter=${expectedPrm}`;
+        expect(query.toString()).equal(expectedQuery);
     });
 
     it("should handle cast", async () => {
