@@ -61,8 +61,8 @@
     "whatwg-fetch": "^3.0.0"
   },
   "dependencies": {
-    "jinqu": "^0.7.0",
-    "jinqu-fetch": "^0.4.0",
+    "jinqu": "~1.0.0",
+    "jinqu-fetch": "~1.0.0",
     "jokenizer": "^0.4.0"
   }
 }

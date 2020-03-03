@@ -3,13 +3,13 @@ import { AjaxOptions, IQueryPart, IQueryProvider, IRequestProvider } from "jinqu
 import { ODataQuery } from "./odata-query";
 import { handleParts } from "./shared";
 
-export class ODataQueryProvider implements IQueryProvider {
+export class ODataQueryProvider<TOptions extends AjaxOptions, TResponse> implements IQueryProvider {
 
-    constructor(protected requestProvider: IRequestProvider<AjaxOptions>) {
+    constructor(protected requestProvider: IRequestProvider<AjaxOptions, TResponse>) {
     }
 
-    public createQuery<T extends object, TResponse = any>(parts?: IQueryPart[]): ODataQuery<T, TResponse> {
-        return new ODataQuery<T, TResponse>(this, parts);
+    public createQuery<T extends object>(parts?: IQueryPart[]): ODataQuery<T, TOptions, TResponse> {
+        return new ODataQuery<T, TOptions, TResponse>(this, parts);
     }
 
     public execute<T = any, TResult = PromiseLike<T[]>>(parts: IQueryPart[]): TResult {

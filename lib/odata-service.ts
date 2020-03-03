@@ -8,7 +8,8 @@ import { getResource } from "./decorators";
 import { ODataQuery } from "./odata-query";
 import { ODataQueryProvider } from "./odata-query-provider";
 
-export class ODataService<TResponse = Response> implements IRequestProvider<AjaxOptions>  {
+export class ODataService<TResponse = Response>
+    implements IRequestProvider<AjaxOptions, TResponse>  {
     public static readonly defaultOptions: AjaxOptions = {};
 
     constructor(
@@ -76,9 +77,10 @@ export class ODataService<TResponse = Response> implements IRequestProvider<Ajax
             });
     }
 
-    public createQuery<T extends object>(resource: string | Ctor<T>): ODataQuery<T, TResponse>;
-    public createQuery<T extends object>(resource: string, ctor: Ctor<T>): ODataQuery<T, TResponse>;
-    public createQuery<T extends object>(resource: string | Ctor<T>, ctor?: Ctor<T>): ODataQuery<T, TResponse> {
+    public createQuery<T extends object>(resource: string | Ctor<T>): ODataQuery<T, AjaxOptions, TResponse>;
+    public createQuery<T extends object>(resource: string, ctor: Ctor<T>): ODataQuery<T, AjaxOptions, TResponse>;
+    public createQuery<T extends object>(resource: string | Ctor<T>, ctor?: Ctor<T>)
+        : ODataQuery<T, AjaxOptions, TResponse> {
         if (typeof resource === "function") {
             ctor = resource;
             resource = getResource(ctor as any);
@@ -87,7 +89,9 @@ export class ODataService<TResponse = Response> implements IRequestProvider<Ajax
                 resource = r[1] || r[2];
             }
         }
-        const query = new ODataQueryProvider(this).createQuery<T>().withOptions({ url: resource });
-        return ctor ? query.cast(ctor) as ODataQuery<T> : query;
+        const query = new ODataQueryProvider<AjaxOptions, TResponse>(this)
+            .createQuery<T>()
+            .withOptions({ url: resource });
+        return ctor ? query.cast(ctor) as any : query;
     }
 }

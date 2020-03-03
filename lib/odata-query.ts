@@ -6,20 +6,24 @@ import {
 import { InlineCountInfo } from "jinqu";
 import { handleParts, ODataFuncs } from "./shared";
 
-export class ODataQuery<T extends object, TResponse = any, TExtra = {}> implements IODataQuery<T, TExtra> {
+export class ODataQuery<
+    T extends object,
+    TOptions extends AjaxOptions = AjaxOptions,
+    TResponse = Response, TExtra = {}>
+    implements IODataQuery<T, TExtra> {
 
     constructor(public readonly provider: IQueryProvider, public readonly parts: IQueryPart[] = []) {
     }
 
-    public withOptions(options: AjaxOptions): ODataQuery<T, TResponse, TExtra> {
+    public withOptions(options: AjaxOptions): ODataQuery<T, TOptions, TResponse, TExtra> {
         return this.create(QueryPart.create(AjaxFuncs.options, [PartArgument.literal(options)])) as any;
     }
 
-    public setParameter(key: string, value: any): ODataQuery<T, TResponse, TExtra> {
+    public setParameter(key: string, value: any): ODataQuery<T, TOptions, TResponse, TExtra> {
         return this.withOptions({ params: [{ key, value }] });
     }
 
-    public includeResponse(): ODataQuery<T, TResponse, TExtra & AjaxResponse<TResponse>> {
+    public includeResponse(): ODataQuery<T, TOptions, TResponse, TExtra & AjaxResponse<TResponse>> {
         const part = new QueryPart(AjaxFuncs.includeResponse, []);
         return this.create(part) as any;
     }
@@ -103,21 +107,21 @@ export class ODataQuery<T extends object, TResponse = any, TExtra = {}> implemen
 
     protected create<TResult extends object = T, TNewExtra = TExtra>(part: IQueryPart)
         : IODataQuery<TResult, TNewExtra> {
-        return new ODataQuery<TResult, TResponse, TNewExtra>(this.provider, [...this.parts, part]);
+        return new ODataQuery<TResult, TOptions, TResponse, TNewExtra>(this.provider, [...this.parts, part]);
     }
 
     protected createOrderedQuery(part: IQueryPart): IOrderedODataQuery<T, TExtra> {
-        return new OrderedODataQuery<T, TResponse, TExtra>(this.provider, [...this.parts, part]);
+        return new OrderedODataQuery<T, TOptions, TResponse, TExtra>(this.provider, [...this.parts, part]);
     }
 
     protected createExpandedQuery<TNav>(part: IQueryPart): IExpandedODataQuery<T, TNav, TExtra> {
-        return new ExpandedODataQuery<T, TNav, TResponse, TExtra>(this.provider, [...this.parts, part]);
+        return new ExpandedODataQuery<T, TNav, TOptions, TResponse, TExtra>(this.provider, [...this.parts, part]);
     }
 }
 
 // tslint:disable-next-line:max-classes-per-file
-class OrderedODataQuery<T extends object, TResponse = any, TExtra = {}>
-    extends ODataQuery<T, TResponse, TExtra> implements IOrderedODataQuery<T, TExtra> {
+class OrderedODataQuery<T extends object, TOptions extends AjaxOptions = AjaxOptions, TResponse = any, TExtra = {}>
+    extends ODataQuery<T, TOptions, TResponse, TExtra> implements IOrderedODataQuery<T, TExtra> {
 
     public thenBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T, TExtra> {
         return this.createOrderedQuery(QueryPart.thenBy(keySelector, scopes));
@@ -129,8 +133,12 @@ class OrderedODataQuery<T extends object, TResponse = any, TExtra = {}>
 }
 
 // tslint:disable-next-line:max-classes-per-file
-class ExpandedODataQuery<TEntity extends object, TProperty, TResponse = any, TExtra = {}>
-    extends ODataQuery<TEntity, TResponse, TExtra> implements IExpandedODataQuery<TEntity, TProperty, TExtra> {
+class ExpandedODataQuery<
+    TEntity extends object, TProperty,
+    TOptions extends AjaxOptions = AjaxOptions,
+    TResponse = any, TExtra = {}>
+    extends ODataQuery<TEntity, TOptions, TResponse, TExtra>
+    implements IExpandedODataQuery<TEntity, TProperty, TExtra> {
 
     public thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(nav: K1, selector?: K2[])
         : IExpandedODataQuery<TEntity, AU<TProperty[K1]>, TExtra>;
@@ -188,7 +196,7 @@ export interface IExpandedODataQuery<TEntity, TProperty, TExtra = {}> extends IO
         : IExpandedODataQuery<TEntity, AU<TProperty[K1]>, TExtra>;
 }
 
-// Array Unwrapper
+// Array un-wrapper
 type AU<T> = T extends any[] ? T[0] : T;
 
 function createExpandArgs(nav: any, prm1?: any, prm2?: any, ...scopes) {
