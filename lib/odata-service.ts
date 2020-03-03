@@ -9,7 +9,7 @@ import { ODataQuery } from "./odata-query";
 import { ODataQueryProvider } from "./odata-query-provider";
 
 export class ODataService<TResponse = Response>
-    implements IRequestProvider<AjaxOptions, TResponse>  {
+    implements IRequestProvider<AjaxOptions>  {
     public static readonly defaultOptions: AjaxOptions = {};
 
     constructor(

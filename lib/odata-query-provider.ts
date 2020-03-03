@@ -5,7 +5,7 @@ import { handleParts } from "./shared";
 
 export class ODataQueryProvider<TOptions extends AjaxOptions, TResponse> implements IQueryProvider {
 
-    constructor(protected requestProvider: IRequestProvider<AjaxOptions, TResponse>) {
+    constructor(protected requestProvider: IRequestProvider<AjaxOptions>) {
     }
 
     public createQuery<T extends object>(parts?: IQueryPart[]): ODataQuery<T, TOptions, TResponse> {

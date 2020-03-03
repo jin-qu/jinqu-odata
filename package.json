@@ -1,6 +1,6 @@
 {
   "name": "jinqu-odata",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Jinqu OData implementation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -41,7 +41,7 @@
     "chai-as-promised": "7.1.1",
     "coveralls": "^3.0.9",
     "fetch-mock": "9.0.0",
-    "jinqu-array-extensions": "^0.1.1",
+    "jinqu-array-extensions": "^1.1.0",
     "karma": "^4.4.1",
     "karma-chai": "^0.1.0",
     "karma-chai-as-promised": "^0.1.2",
@@ -61,7 +61,7 @@
     "whatwg-fetch": "^3.0.0"
   },
   "dependencies": {
-    "jinqu": "^1.1.0",
+    "jinqu": "^1.1.2",
     "jinqu-fetch": "^1.1.0",
     "jokenizer": "^0.4.3"
   }
