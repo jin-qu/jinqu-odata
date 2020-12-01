@@ -313,6 +313,9 @@ function  valueToStr(value) {
         return `'${value.replace(/'/g, "''")}'`;
     }
 
+    if (typeof value === "boolean")
+        return value.toString();
+
     return value;
 }
 
