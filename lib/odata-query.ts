@@ -4,7 +4,7 @@ import {
     PartArgument, Predicate, QueryPart, Result,
 } from "jinqu";
 import { InlineCountInfo } from "jinqu";
-import { handleParts, ODataFuncs } from "./shared";
+import { handleParts, ODataFuncs, PrimitiveValue } from "./shared";
 
 export class ODataQuery<
     T extends object,
@@ -26,6 +26,11 @@ export class ODataQuery<
     public includeResponse(): ODataQuery<T, TOptions, TResponse, TExtra & AjaxResponse<TResponse>> {
         const part = new QueryPart(AjaxFuncs.includeResponse, []);
         return this.create(part) as any;
+    }
+
+    public byKey(key: PrimitiveValue): IODataQuery<T, TExtra> {
+        const part = new QueryPart(ODataFuncs.byKey, [PartArgument.literal(key)]);
+        return this.create(part);
     }
 
     public inlineCount(): IODataQuery<T, TExtra & InlineCountInfo> {
@@ -100,6 +105,11 @@ export class ODataQuery<
         return (query.provider as any).executeAsync([...query.parts, QueryPart.toArray()]);
     }
 
+    public singleAsync(ctor?: Ctor<T>): PromiseLike<Result<T, TExtra>> {
+        const query = ctor ? this.cast(ctor) : this;
+        return (query.provider as any).executeAsync([...query.parts, QueryPart.single()]);
+    }
+
     public toString() {
         const [queryParams] = handleParts(this.parts);
         return queryParams.map((p) => `${p.key}=${p.value}`).join("&");
@@ -157,6 +167,7 @@ class ExpandedODataQuery<
 }
 
 export interface IODataQuery<T, TExtra = {}> extends IQueryBase {
+    byKey(key: PrimitiveValue): IODataQuery<T, TExtra>;
     inlineCount(value?: boolean): IODataQuery<T, TExtra & InlineCountInfo>;
     where(predicate: Predicate<T>, ...scopes): IODataQuery<T, TExtra>;
     orderBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T, TExtra>;
@@ -178,6 +189,7 @@ export interface IODataQuery<T, TExtra = {}> extends IQueryBase {
         : PromiseLike<Result<TResult[], TExtra>>;
     count(predicate?: Predicate<T>, ...scopes): PromiseLike<Result<number, TExtra>>;
     toArrayAsync(ctor?: Ctor<T>): PromiseLike<Result<T[], TExtra>>;
+    singleAsync(ctor?: Ctor<T>): PromiseLike<Result<T, TExtra>>;
 }
 
 export interface IOrderedODataQuery<T, TExtra = {}> extends IODataQuery<T, TExtra> {

@@ -10,8 +10,11 @@ import {
     VariableExpression,
 } from "jokenizer";
 
+export type PrimitiveValue = string | number | bigint | boolean | undefined | null;
+
 export const ODataFuncs = {
     apply: "apply",
+    byKey: "byKey",
     expand: "expand",
     filter: "filter",
     oDataSelect: "oDataSelect",
@@ -50,6 +53,7 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
     const params = {};
     const queryParams: QueryParameter[] = [];
     const expands: IQueryPart[] = [];
+    let byKey: IQueryPart;
     let inlineCount = false;
     let includeResponse = false;
     let orders: IQueryPart[] = [];
@@ -70,6 +74,8 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
             inlineCount = true;
         } else if (part.type === AjaxFuncs.includeResponse) {
             includeResponse = true;
+        } else if (part.type === ODataFuncs.byKey) {
+            byKey = part;
         } else if (part.type === ODataFuncs.oDataSelect) {
             select = part;
         } else if (part.type === ODataFuncs.expand || part.type === ODataFuncs.thenExpand) {
@@ -86,6 +92,10 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
         } else {
             throw new Error(`${part.type} is not supported.`);
         }
+    }
+
+    if (byKey) {
+        queryParams.push({ key: ODataFuncs.byKey, value: byKey.args[0].literal });
     }
 
     if (orders.length) {

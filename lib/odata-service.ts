@@ -7,6 +7,7 @@ import { FetchProvider } from "jinqu-fetch";
 import { getResource } from "./decorators";
 import { ODataQuery } from "./odata-query";
 import { ODataQueryProvider } from "./odata-query-provider";
+import { ODataFuncs } from "./shared";
 
 export class ODataService<TResponse = Response>
     implements IRequestProvider<AjaxOptions>  {
@@ -30,11 +31,14 @@ export class ODataService<TResponse = Response>
 
         let includeResponse = false;
         let countPrm: QueryParameter = null;
+        let keyPrm: QueryParameter = null;
         o.params = o.params || [];
         params = params || [];
         let inlineCountEnabled = false;
         params.forEach((p) => {
-            if (p.key === QueryFunc.inlineCount) {
+            if (p.key === ODataFuncs.byKey) {
+                keyPrm = p;
+            } else if (p.key === QueryFunc.inlineCount) {
                 o.params.push({ key: "$count", value: "true" });
                 inlineCountEnabled = true;
             } else if (p.key === "$count") {
@@ -45,6 +49,14 @@ export class ODataService<TResponse = Response>
                 o.params.push(p);
             }
         });
+
+        if (keyPrm) {
+            let keyVal = null;
+            if (keyPrm.value) {
+                keyVal = typeof keyPrm.value === "string" ? "'" + keyPrm.value + "'" : keyPrm.value;
+            }
+            o.url += `(${keyVal})`;
+        }
 
         if (o.params.length) {
             o.url += "?" + o.params.map((p) => `${p.key}=${encodeURIComponent(p.value)}`).join("&");
@@ -64,13 +76,16 @@ export class ODataService<TResponse = Response>
                 if (value && value.value !== void 0) {
                     value = value.value;
                 }
+                else {
+                    delete value["@odata.context"];
+                }
 
                 if (!inlineCountEnabled && !includeResponse) {
                     return value;
                 }
 
                 return {
-                    inlineCount: inlineCountEnabled ? Number(r.value && r.value["odata.count"]) : void 0,
+                    inlineCount: inlineCountEnabled ? Number(r.value && r.value["@odata.count"]) : void 0,
                     response: includeResponse ? r.response : void 0,
                     value,
                 };
