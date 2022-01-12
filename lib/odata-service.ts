@@ -51,11 +51,7 @@ export class ODataService<TResponse = Response>
         });
 
         if (keyPrm) {
-            let keyVal = null;
-            if (keyPrm.value) {
-                keyVal = typeof keyPrm.value === "string" ? "'" + keyPrm.value + "'" : keyPrm.value;
-            }
-            o.url += `(${keyVal})`;
+            o.url += `(${keyPrm.value})`;
         }
 
         if (o.params.length) {

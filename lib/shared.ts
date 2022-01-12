@@ -10,7 +10,11 @@ import {
     VariableExpression,
 } from "jokenizer";
 
-export type PrimitiveValue = string | number | bigint | boolean | undefined | null;
+export type PrimitiveValue = string | number | bigint | boolean | null;
+//export type CompositeKey<T> = { [K in keyof T]?: T[K] extends object ? never : T[K] };
+export type CompositeKey<T> = { [P in 
+    ({ [K in keyof T]: T[K] extends object ? never : K }[keyof T])
+]?: T[P] };
 
 export const ODataFuncs = {
     apply: "apply",
@@ -95,7 +99,34 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
     }
 
     if (byKey) {
-        queryParams.push({ key: ODataFuncs.byKey, value: byKey.args[0].literal });
+        let keyVal: string = null;
+        let argVal = byKey.args[0].literal;
+
+        if (argVal) {
+            if (typeof argVal === "object") {
+                if (Object.keys(argVal).length > 1) {
+                    keyVal = "";
+                    Object.keys(argVal).forEach((key: string, ind: number) => {
+                        let val = argVal[key];
+                        if (typeof argVal === "string") {
+                            val = "'" + val + "'";
+                        }
+                        if (ind > 0) keyVal += ",";
+                        keyVal += `${key}=${val}`;
+                    });
+                }
+                else {
+                    throw new Error("Composite key must have at least two properties.");
+                }
+            }
+            else if (typeof argVal === "string") {
+                keyVal = "'" + argVal + "'";
+            }
+            else {
+                keyVal = String(argVal);
+            }
+        }
+        queryParams.push({ key: ODataFuncs.byKey, value: keyVal });
     }
 
     if (orders.length) {
