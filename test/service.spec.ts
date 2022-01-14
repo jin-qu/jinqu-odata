@@ -472,7 +472,7 @@ describe("Service tests", () => {
         expect(response1).to.deep.equal(value);
 
         const query2 = service.companies().byKey("id5");
-        expect(query2.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+        expect(query2.singleAsync()).to.be.fulfilled.and.eventually.be.null;
         const url2 = provider.options.url;
         const expectedUrl2 = "api/Companies('id5')";
         expect(url2).equal(expectedUrl2);
@@ -480,7 +480,7 @@ describe("Service tests", () => {
     
     it("should handle byKey({composite})", async () => {
         const query1 = service.companies().byKey({ id: 7, name: "Microsoft" });
-        expect(query1.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+        expect(query1.singleAsync()).to.be.fulfilled.and.eventually.be.null;
         const url1 = provider.options.url;
         const expectedUrl1 = "api/Companies(id=7,name='Microsoft')";
         expect(url1).equal(expectedUrl1);
@@ -488,6 +488,6 @@ describe("Service tests", () => {
     
     it("should throw for invalid composite key", async () => {
         const query2 = service.companies().byKey({ id: 7 });
-        expect(() => query2.toArrayAsync()).to.throw();
+        expect(() => query2.singleAsync()).to.throw();
     });
 });
