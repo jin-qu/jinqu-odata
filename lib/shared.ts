@@ -10,7 +10,7 @@ import {
     VariableExpression,
 } from "jokenizer";
 
-export type PrimitiveValue = string | number | bigint | boolean | null;
+export type SingleKey = string | number | bigint | boolean | null;// | Date;
 //export type CompositeKey<T> = { [K in keyof T]?: T[K] extends object ? never : T[K] };
 export type CompositeKey<T> = { [P in 
     ({ [K in keyof T]: T[K] extends object ? never : K }[keyof T])
@@ -65,6 +65,10 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
     let apply: IQueryPart;
     let ctor: Ctor<any>;
 
+    function quoteIfString(val: any): string {
+        return (typeof val === "string") ? "'" + val + "'" : String(val);
+    }
+
     for (const part of parts) {
         if (part.type === AjaxFuncs.options) {
             options.push(part.args[0].literal);
@@ -101,31 +105,20 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
     if (byKey) {
         let keyVal: string = null;
         let argVal = byKey.args[0].literal;
-
         if (argVal) {
             if (typeof argVal === "object") {
                 if (Object.keys(argVal).length > 1) {
-                    keyVal = "";
-                    Object.keys(argVal).forEach((key: string, ind: number) => {
-                        let val = argVal[key];
-                        if (typeof argVal === "string") {
-                            val = "'" + val + "'";
-                        }
-                        if (ind > 0) keyVal += ",";
-                        keyVal += `${key}=${val}`;
-                    });
+                    keyVal = Object.keys(argVal).map((key: string) => `${key}=${quoteIfString(argVal[key])}`).join(",");
                 }
                 else {
                     throw new Error("Composite key must have at least two properties.");
                 }
             }
-            else if (typeof argVal === "string") {
-                keyVal = "'" + argVal + "'";
-            }
             else {
-                keyVal = String(argVal);
+                keyVal = quoteIfString(argVal);
             }
         }
+
         queryParams.push({ key: ODataFuncs.byKey, value: keyVal });
     }
 

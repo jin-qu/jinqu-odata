@@ -4,7 +4,7 @@ import {
     PartArgument, Predicate, QueryPart, Result,
 } from "jinqu";
 import { InlineCountInfo } from "jinqu";
-import { handleParts, ODataFuncs, PrimitiveValue, CompositeKey } from "./shared";
+import { handleParts, ODataFuncs, SingleKey, CompositeKey } from "./shared";
 
 export class ODataQuery<
     T extends object,
@@ -28,7 +28,7 @@ export class ODataQuery<
         return this.create(part) as any;
     }
 
-    public byKey(key: PrimitiveValue | CompositeKey<T>): IODataQuery<T, TExtra> {
+    public byKey(key: SingleKey | CompositeKey<T>): IODataQuery<T, TExtra> {
         const part = new QueryPart(ODataFuncs.byKey, [PartArgument.literal(key)]);
         return this.create(part);
     }
@@ -167,7 +167,7 @@ class ExpandedODataQuery<
 }
 
 export interface IODataQuery<T, TExtra = {}> extends IQueryBase {
-    byKey(key: PrimitiveValue | CompositeKey<T>): IODataQuery<T, TExtra>;
+    byKey(key: SingleKey | CompositeKey<T>): IODataQuery<T, TExtra>;
     inlineCount(value?: boolean): IODataQuery<T, TExtra & InlineCountInfo>;
     where(predicate: Predicate<T>, ...scopes): IODataQuery<T, TExtra>;
     orderBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T, TExtra>;
