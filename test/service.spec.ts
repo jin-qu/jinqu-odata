@@ -9,7 +9,7 @@ import "mocha";
 
 import { ODataQuery, ODataQueryProvider, ODataService } from "../index";
 import { ODataFuncs } from "../lib/shared";
-import { Company, CompanyService, Country, getCompanies, ICompany, ICountry, MockRequestProvider } from "./fixture";
+import { Company, CompanyService, Country, getCompanies, getCompany, ICompany, ICountry, MockRequestProvider } from "./fixture";
 
 chai.use(chaiAsPromised);
 
@@ -111,7 +111,7 @@ describe("Service tests", () => {
 
     it("should handle inlineCount", async () => {
         const value1 = [];
-        const result1 = { "odata.count": 100, "value": value1 };
+        const result1 = { "@odata.count": 100, "value": value1 };
         const prv1 = new MockRequestProvider(result1);
         const query1 = new CompanyService(prv1).companies().inlineCount();
         const response1 = await query1.toArrayAsync();
@@ -458,5 +458,36 @@ describe("Service tests", () => {
         const url = provider.options.url;
         const expectedUrl = `api/Companies?$filter=${encodeURIComponent("deleted eq false")}`;
         expect(url).equal(expectedUrl);
+    });
+
+    it("should handle byKey(single)", async () => {
+        const value = getCompany();
+        const result = Object.assign({}, { "@odata.context": "ctx" }, value);
+        const prv = new MockRequestProvider(result);
+        const query1 = new CompanyService(prv).companies().byKey(5);
+        const response1 = await query1.singleAsync();
+        const url1 = prv.options.url;
+        const expectedUrl1 = "api/Companies(5)";
+        expect(url1).equal(expectedUrl1);
+        expect(response1).to.deep.equal(value);
+
+        const query2 = service.companies().byKey("id5");
+        expect(query2.singleAsync()).to.be.fulfilled.and.eventually.be.null;
+        const url2 = provider.options.url;
+        const expectedUrl2 = "api/Companies('id5')";
+        expect(url2).equal(expectedUrl2);
+    });
+    
+    it("should handle byKey({composite})", async () => {
+        const query1 = service.companies().byKey({ id: 7, name: "Microsoft" });
+        expect(query1.singleAsync()).to.be.fulfilled.and.eventually.be.null;
+        const url1 = provider.options.url;
+        const expectedUrl1 = "api/Companies(id=7,name='Microsoft')";
+        expect(url1).equal(expectedUrl1);
+    });
+    
+    it("should throw for invalid composite key", async () => {
+        const query2 = service.companies().byKey({ id: 7 });
+        expect(() => query2.singleAsync()).to.throw();
     });
 });

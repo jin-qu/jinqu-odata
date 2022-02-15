@@ -74,3 +74,7 @@ export function getCompanies(): ICompany[] {
         { id: 2, name: "Google", createDate: new Date(), deleted: false, addresses: [] },
     ];
 }
+
+export function getCompany(): ICompany {
+    return { id: 3, name: "IBM", createDate: new Date(), deleted: false, addresses: [] };
+}
