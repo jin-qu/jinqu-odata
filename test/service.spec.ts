@@ -195,9 +195,9 @@ describe("Service tests", () => {
     });
 
     it("should handle select", () => {
-        const promise = service.companies()
+        const query = service.companies()
             .select("id", "name");
-        expect(promise).to.be.fulfilled.and.eventually.be.null;
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
         const expectedUrl = `api/Companies?$select=${encodeURIComponent("id,name")}`;
