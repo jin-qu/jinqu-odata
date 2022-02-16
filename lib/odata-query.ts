@@ -74,9 +74,9 @@ export class ODataQuery<
         return this.create(part);
     }
 
-    public select<K extends keyof T>(...names: K[]): PromiseLike<Result<Array<Pick<T, K>>, TExtra>> {
+    public select<K extends keyof T>(...names: K[]): IODataQuery<Pick<T, K>, TExtra> {
         const part = new QueryPart(ODataFuncs.oDataSelect, [PartArgument.literal(names)]);
-        return this.provider.executeAsync([...this.parts, part]);
+        return this.create(part);
     }
 
     public groupBy<TKey extends object, TResult extends object>(
@@ -183,7 +183,7 @@ export interface IODataQuery<T, TExtra = {}> extends IQueryBase {
     take(count: number): IODataQuery<T, TExtra>;
     cast(ctor: Ctor<T>): IODataQuery<T, TExtra>;
 
-    select<K extends keyof T>(...names: K[]): PromiseLike<Result<Array<Pick<T, K>>, TExtra>>;
+    select<K extends keyof T>(...names: K[]): IODataQuery<Pick<T, K>, TExtra>;
     groupBy<TKey extends object, TResult extends object>(
         keySelector: Func1<T, TKey>, elementSelector?: Func1<T[] & TKey, TResult>, ...scopes: any[])
         : PromiseLike<Result<TResult[], TExtra>>;
