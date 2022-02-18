@@ -1,0 +1,26 @@
+{
+    "configurations": [
+        {
+            "name": "Attach to Chrome",
+            "address": "localhost",
+            "port": 9222,
+            "request": "attach",
+            "type": "pwa-chrome",
+            "sourceMaps": true,
+            "timeout": 600000,
+            "restart": true,
+            "webRoot": "${workspaceFolder}",
+            "outFiles": [
+                "${workspaceFolder}/dist/**/*.js"
+            ],
+            "pathMapping": {
+                "/": "${workspaceFolder}",
+                "/base/": "${workspaceFolder}"
+            }
+        }
+    ],
+    "outFiles": [
+        //"${workspaceFolder}/dist/**/*.js"
+        "${workspaceFolder}/**/*.js"
+    ]
+}

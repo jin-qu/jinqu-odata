@@ -74,8 +74,11 @@ export class ODataQuery<
         return this.create(part);
     }
 
-    public select<K extends keyof T>(...names: K[]): IODataQuery<Pick<T, K>, TExtra> {
-        const part = new QueryPart(ODataFuncs.oDataSelect, [PartArgument.literal(names)]);
+    public select<K extends keyof T>(...names: K[]): IODataQuery<Pick<T, K>, TExtra>;
+    public select<K extends keyof T>(keySelector: Func1<T, T[K][]>, ...scopes): IODataQuery<Pick<T, K>, TExtra>;
+    public select<K extends keyof T>(prm0: K | Func1<T, T[K][]>, ...prms: any[]): IODataQuery<Pick<T, K>, TExtra> {
+        const args = createSelectArgs(prm0, ...prms);
+        const part = new QueryPart(ODataFuncs.oDataSelect, args);
         return this.create(part);
     }
 
@@ -182,8 +185,8 @@ export interface IODataQuery<T, TExtra = {}> extends IQueryBase {
     skip(count: number): IODataQuery<T, TExtra>;
     take(count: number): IODataQuery<T, TExtra>;
     cast(ctor: Ctor<T>): IODataQuery<T, TExtra>;
-
     select<K extends keyof T>(...names: K[]): IODataQuery<Pick<T, K>, TExtra>;
+    select<K extends keyof T>(keySelector: Func1<T, T[K][]>, ...scopes): IODataQuery<Pick<T, K>, TExtra>;
     groupBy<TKey extends object, TResult extends object>(
         keySelector: Func1<T, TKey>, elementSelector?: Func1<T[] & TKey, TResult>, ...scopes: any[])
         : PromiseLike<Result<TResult[], TExtra>>;
@@ -223,4 +226,15 @@ function createExpandArgs(nav: any, prm1?: any, prm2?: any, ...scopes) {
     }
 
     return [PartArgument.literal(nav), PartArgument.literal(selector), PartArgument.identifier(filter, scopes)];
+}
+
+function createSelectArgs(prm0?: any, ...prms) {
+    let arg;
+    if (typeof prm0 === "function") {
+        arg = PartArgument.identifier(prm0, prms);
+    }
+    else {
+        arg = PartArgument.literal([prm0, ...prms]);
+    }
+    return [arg];
 }

@@ -7,7 +7,7 @@ import {
     CallExpression, Expression, ExpressionType,
     FuncExpression, GroupExpression, LiteralExpression,
     MemberExpression, ObjectExpression, UnaryExpression,
-    VariableExpression,
+    VariableExpression, ArrayExpression
 } from "jokenizer";
 
 export type SingleKey = string | number | bigint | boolean | null;// | Date;
@@ -131,7 +131,14 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
     }
 
     if (select) {
-        queryParams.push({ key: "$select", value: select.args[0].literal.join(",") });
+        const arg0 = select.args[0];
+        if (arg0.func) {
+            const keySelector = handlePartArg(arg0);
+            queryParams.push({ key: "$select", value: keySelector });
+        }
+        else {
+            queryParams.push({ key: "$select", value: arg0.literal.join(",") });
+        }
     }
 
     if (expands.length) {
@@ -232,6 +239,8 @@ function  expToStr(exp: Expression, scopes: any[], parameters: string[]): string
             return funcToStr(exp as FuncExpression, scopes, parameters);
         case ExpressionType.Call:
             return callToStr(exp as CallExpression, scopes, parameters);
+        case ExpressionType.Array:
+            return arrayToStr(exp as ArrayExpression, scopes, parameters);
         default:
             throw new Error(`Unsupported expression type ${exp.type}`);
     }
@@ -263,6 +272,13 @@ function  objectToStr(exp: ObjectExpression, scopes: any[], parameters: string[]
     return exp.members.map((m) => {
         const e = expToStr(m.right, scopes, parameters);
         return e === m.name ? e : `${e} as ${m.name}`;
+    }).join(",");
+}
+
+function  arrayToStr(exp: ArrayExpression, scopes: any[], parameters: string[]) {
+    return exp.items.map((i) => {
+        const e = expToStr(i, scopes, parameters);
+        return e;
     }).join(",");
 }
 

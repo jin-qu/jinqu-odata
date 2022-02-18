@@ -194,9 +194,19 @@ describe("Service tests", () => {
         expect(url).equal(expectedUrl);
     });
 
-    it("should handle select", () => {
+    it("should handle select as literals", () => {
         const query = service.companies()
             .select("id", "name");
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `api/Companies?$select=${encodeURIComponent("id,name")}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it("should handle select as array of members", () => {
+        const query = service.companies()
+            .select(c => [c.id, c.name]);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
