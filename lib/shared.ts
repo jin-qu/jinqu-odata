@@ -29,7 +29,7 @@ export const ODataFuncs = {
 const orderFuncs = [QueryFunc.orderBy, QueryFunc.orderByDescending];
 const thenFuncs = [QueryFunc.thenBy, QueryFunc.thenByDescending];
 const descFuncs = [QueryFunc.orderByDescending, QueryFunc.thenByDescending];
-const otherFuncs = [QueryFunc.inlineCount, QueryFunc.skip, QueryFunc.count, ODataFuncs.filter, ODataFuncs.top];
+const otherFuncs = [QueryFunc.inlineCount, QueryFunc.skip, QueryFunc.count, ODataFuncs.top];
 const mathFuncs = ["round", "floor", "ceiling"];
 const aggregateFuncs = ["sum", "max", "min"];
 const functions = {
@@ -61,6 +61,7 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
     let inlineCount = false;
     let includeResponse = false;
     let orders: IQueryPart[] = [];
+    let filters: IQueryPart[] = [];
     let select: IQueryPart;
     let apply: IQueryPart;
     let ctor: Ctor<any>;
@@ -95,6 +96,8 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
             orders = [part];
         } else if (thenFuncs.indexOf(part.type) !== -1) {
             orders.push(part);
+        } else if (part.type === ODataFuncs.filter) {
+            filters.push(part);
         } else if (otherFuncs.indexOf(part.type) !== -1) {
             params[part.type] = part.args[0];
         } else {
@@ -167,6 +170,13 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
 
     if (includeResponse) {
         queryParams.push({ key: AjaxFuncs.includeResponse, value: "" });
+    }
+
+    if (filters.length) {
+        const value = filters.map((o) => {
+            return handlePartArg(o.args[0]);
+        }).join(" and ");
+        queryParams.push({ key: "$filter", value });
     }
 
     for (const p in params) {
@@ -346,6 +356,9 @@ function  valueToStr(value) {
     if (typeof value === "string") {
         return `'${value.replace(/'/g, "''")}'`;
     }
+
+    if (typeof value === "number")
+        return value.toString();
 
     if (typeof value === "boolean")
         return value.toString();

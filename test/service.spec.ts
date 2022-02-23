@@ -176,6 +176,16 @@ describe("Service tests", () => {
         expect(url).equal(expectedUrl);
     });
 
+    it("should handle filter parameter with zero value", async () => {
+        const val = 0;
+        const query = service.companies().where("c => c.id >= val", { val });
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent("id ge 0")}`;
+        expect(url).equal(expectedUrl);
+    });
+
     it("should handle order and then descending parameters", () => {
         const query = service.companies().orderBy((c) => c.id).thenByDescending((c) => c.name);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
@@ -407,6 +417,16 @@ describe("Service tests", () => {
         expect(query.toString()).equal(expectedQuery);
     });
 
+    it("should handle chained filters", async () => {
+        const query = service.companies().where(c => c.id >= 27).where(c => c.name.startsWith("Net"));
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedPrm = "id ge 27 and startswith(name,'Net')";
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
+        expect(url).equal(expectedUrl);
+    });
+
     it("should handle cast", async () => {
         const prv = new MockRequestProvider(getCompanies());
         const svc = new ODataService("api", prv);
@@ -477,7 +497,7 @@ describe("Service tests", () => {
         const expectedUrl2 = "api/Companies('id5')";
         expect(url2).equal(expectedUrl2);
     });
-    
+
     it("should handle byKey({composite})", async () => {
         const query1 = service.companies().byKey({ id: 7, name: "Microsoft" });
         expect(query1.singleAsync()).to.be.fulfilled.and.eventually.be.null;
@@ -485,7 +505,7 @@ describe("Service tests", () => {
         const expectedUrl1 = "api/Companies(id=7,name='Microsoft')";
         expect(url1).equal(expectedUrl1);
     });
-    
+
     it("should throw for invalid composite key", async () => {
         const query2 = service.companies().byKey({ id: 7 });
         expect(() => query2.singleAsync()).to.throw();
