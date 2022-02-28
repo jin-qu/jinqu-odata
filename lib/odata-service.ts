@@ -76,7 +76,7 @@ export class ODataService<TResponse = Response>
                     //delete value["@odata.context"];
                     Object.keys(value).forEach((key: string) => {
                         if (key && key[0] === "@") {
-                            delete value[key];    
+                            delete value[key];
                         }
                     });
                 }

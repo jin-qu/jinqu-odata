@@ -57,11 +57,11 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
     const params = {};
     const queryParams: QueryParameter[] = [];
     const expands: IQueryPart[] = [];
+    const filters: IQueryPart[] = [];
     let byKey: IQueryPart;
     let inlineCount = false;
     let includeResponse = false;
     let orders: IQueryPart[] = [];
-    let filters: IQueryPart[] = [];
     let select: IQueryPart;
     let apply: IQueryPart;
     let ctor: Ctor<any>;

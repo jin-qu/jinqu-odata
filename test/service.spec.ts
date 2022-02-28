@@ -469,6 +469,13 @@ describe("Service tests", () => {
         result.forEach((r) => expect(r).to.be.instanceOf(Company));
     });
 
+    it("should handle cast via toArrayAsync with inlineCount", async () => {
+        const prv = new MockRequestProvider({ value: getCompanies() });
+        const svc = new ODataService("api", prv);
+        const result = await svc.createQuery<ICompany>("Companies").inlineCount().toArrayAsync(Company);
+
+        result.value.forEach((r) => expect(r).to.be.instanceOf(Company));
+    });
 
     it('should handle boolean parameters', () => {
         const query = service.companies()
