@@ -112,12 +112,10 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
             if (typeof argVal === "object") {
                 if (Object.keys(argVal).length > 1) {
                     keyVal = Object.keys(argVal).map((key: string) => `${key}=${quoteIfString(argVal[key])}`).join(",");
-                }
-                else {
+                } else {
                     throw new Error("Composite key must have at least two properties.");
                 }
-            }
-            else {
+            } else {
                 keyVal = quoteIfString(argVal);
             }
         }

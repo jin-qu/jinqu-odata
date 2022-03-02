@@ -25,13 +25,11 @@ export class ODataQueryProvider<TOptions extends AjaxOptions, TResponse> impleme
                 if ((d.inlineCount !== void 0 || d.response) && d.value !== void 0) {
                     d.value = plainToClass(ctor, d.value);
                     return d;
-                }
-                else {
+                } else {
                     return plainToClass(ctor, d);
                 }
             })
-        }
-        else {
+        } else {
             return promise;
         }
     }
