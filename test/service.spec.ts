@@ -398,7 +398,30 @@ describe("Service tests", () => {
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedPrm = `createDate lt datetime'${date.toISOString()}' and name ne null`;
+        const expectedPrm = `createDate lt ${date.toISOString()} and name ne null`;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
+        expect(url).equal(expectedUrl);
+    });
+
+it("should handle date member func", async () => {
+    const date = new Date(1592, 2, 14);
+    const query = service.companies().where("(c) => c.createDate.getDatePart() >= date", { date });
+    expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+    const url = provider.options.url;
+    const expectedPrm = `date(createDate) ge ${date.toISOString()}`;
+    const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
+    expect(url).equal(expectedUrl);
+});
+
+it("should handle date literal", async () => {
+        const date = new Date(1592, 2, 14);
+        const literal = `Date('${date.toISOString()}')`;
+        const query = service.companies().where(`createDate == ${literal}`);
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedPrm = `createDate eq ${date.toISOString()}`;
         const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
         expect(url).equal(expectedUrl);
     });
@@ -478,6 +501,16 @@ describe("Service tests", () => {
     });
 
     it('should handle boolean parameters', () => {
+        const query = service.companies()
+            .where('c => c.deleted === boolVar', { boolVar: false });
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent("deleted eq false")}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it('should handle Date parameters', () => {
         const query = service.companies()
             .where('c => c.deleted === boolVar', { boolVar: false });
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;

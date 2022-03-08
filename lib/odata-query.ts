@@ -4,7 +4,13 @@ import {
     PartArgument, Predicate, QueryPart, Result,
 } from "jinqu";
 import { InlineCountInfo } from "jinqu";
-import { handleParts, ODataFuncs, SingleKey, CompositeKey } from "./shared";
+import { handleParts, ODataFuncs } from "./shared";
+
+export type SingleKey = string | number | bigint | boolean | null;// | Date;
+//export type CompositeKey<T> = { [K in keyof T]?: T[K] extends object ? never : T[K] };
+export type CompositeKey<T> = { [P in
+    ({ [K in keyof T]: T[K] extends object ? never : K }[keyof T])
+]?: T[P] };
 
 export class ODataQuery<
     T extends object,

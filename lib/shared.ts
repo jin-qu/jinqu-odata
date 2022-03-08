@@ -10,12 +10,6 @@ import {
     VariableExpression,
 } from "jokenizer";
 
-export type SingleKey = string | number | bigint | boolean | null;// | Date;
-//export type CompositeKey<T> = { [K in keyof T]?: T[K] extends object ? never : T[K] };
-export type CompositeKey<T> = { [P in 
-    ({ [K in keyof T]: T[K] extends object ? never : K }[keyof T])
-]?: T[P] };
-
 export const ODataFuncs = {
     apply: "apply",
     byKey: "byKey",
@@ -34,11 +28,13 @@ const mathFuncs = ["round", "floor", "ceiling"];
 const aggregateFuncs = ["sum", "max", "min"];
 const functions = {
     getDate: "day",
+    getDatePart: "date",
     getFullYear: "year",
     getHours: "hour",
     getMinutes: "minute",
     getMonth: "month",
     getSeconds: "second",
+    getTimePart: "time",
     includes: "contains",
     substr: "substring",
     toLowerCase: "tolower",
@@ -311,6 +307,12 @@ function  funcToStr(exp: FuncExpression, scopes: any[], parameters: string[]) {
 function  callToStr(exp: CallExpression, scopes: any[], parameters: string[]) {
     const callee = exp.callee as MemberExpression;
     if (callee.type !== ExpressionType.Member) {
+        if (callee.type === ExpressionType.Variable) {
+            // handle Date literal
+            if (callee.name === "Date" && exp.args[0].type === ExpressionType.Literal) {
+                return (exp.args[0] as LiteralExpression).value;
+            }
+        }
         throw new Error(`Invalid function call ${expToStr(exp.callee, scopes, parameters)}`);
     }
 
@@ -344,7 +346,7 @@ function  callToStr(exp: CallExpression, scopes: any[], parameters: string[]) {
 
 function  valueToStr(value) {
     if (Object.prototype.toString.call(value) === "[object Date]") {
-        return `datetime'${value.toISOString()}'`;
+        return `${value.toISOString()}`;
     }
 
     if (value == null) {
