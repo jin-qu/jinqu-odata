@@ -16,6 +16,7 @@ export const ODataFuncs = {
     expand: "expand",
     filter: "filter",
     oDataSelect: "oDataSelect",
+    setData: "setData",
     thenExpand: "thenExpand",
     top: "top",
 };
@@ -54,6 +55,7 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
     const queryParams: QueryParameter[] = [];
     const expands: IQueryPart[] = [];
     const filters: IQueryPart[] = [];
+    let data: IQueryPart;
     let byKey: IQueryPart;
     let inlineCount = false;
     let includeResponse = false;
@@ -88,6 +90,8 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
         } else if (part.type === ODataFuncs.apply) {
             ctor = null;
             apply = part;
+        } else if (part.type === ODataFuncs.setData) {
+            data = part;
         } else if (orderFuncs.indexOf(part.type) !== -1) {
             orders = [part];
         } else if (thenFuncs.indexOf(part.type) !== -1) {
@@ -187,6 +191,10 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
         } else {
             queryParams.push({ key: "$apply", value: `groupby((${keySelector}))` });
         }
+    }
+
+    if (data) {
+        options.push({ data: data.args[0].literal });
     }
 
     return [queryParams, options, ctor];

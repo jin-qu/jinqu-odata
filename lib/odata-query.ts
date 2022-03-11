@@ -34,6 +34,11 @@ export class ODataQuery<
         return this.create(part) as any;
     }
 
+    public setData(value: any): IODataQuery<T, TExtra> {
+        const part = new QueryPart(ODataFuncs.setData, [PartArgument.literal(value)]);
+        return this.create(part);
+    }
+
     public byKey(key: SingleKey | CompositeKey<T>): IODataQuery<T, TExtra> {
         const part = new QueryPart(ODataFuncs.byKey, [PartArgument.literal(key)]);
         return this.create(part);
@@ -134,11 +139,8 @@ export class ODataQuery<
         return new ExpandedODataQuery<T, TNav, TOptions, TResponse, TExtra>(this.provider, [...this.parts, part]);
     }
 
-    public insertAsync(entity: T, returnInserted?: boolean): PromiseLike<Result<T, TExtra>> {
-        const options: AjaxOptions = {
-            method: "POST",
-            data: entity,
-        };
+    public insertAsync(returnInserted?: boolean): PromiseLike<Result<T, TExtra>> {
+        const options: AjaxOptions = { method: "POST" };
         //if (returnInserted) {
         //    options.headers = {
         //        "prefer": "return=representation"
@@ -148,11 +150,8 @@ export class ODataQuery<
         return (this.provider as any).executeAsync([...this.parts, part]);
     }
 
-    public updateAsync(entity: T, returnUpdated?: boolean): PromiseLike<Result<T, TExtra>> {
-        const options: AjaxOptions = {
-            method: "PUT",
-            data: entity,
-        };
+    public updateAsync(returnUpdated?: boolean): PromiseLike<Result<T, TExtra>> {
+        const options: AjaxOptions = { method: "PUT" };
         if (returnUpdated) {
             options.headers = {
                 "prefer": "return=representation"
@@ -230,10 +229,11 @@ export interface IODataQuery<T, TExtra = {}> extends IQueryBase {
         keySelector: Func1<T, TKey>, elementSelector?: Func1<T[] & TKey, TResult>, ...scopes: any[])
         : PromiseLike<Result<TResult[], TExtra>>;
     count(predicate?: Predicate<T>, ...scopes): PromiseLike<Result<number, TExtra>>;
+    setData(value: any): IODataQuery<T, TExtra>;
     toArrayAsync(ctor?: Ctor<T>): PromiseLike<Result<T[], TExtra>>;
     singleAsync(ctor?: Ctor<T>): PromiseLike<Result<T, TExtra>>;
-    insertAsync(entity: T, returnInserted?: boolean): PromiseLike<Result<T, TExtra>>;
-    updateAsync(entity: T, returnUpdated?: boolean): PromiseLike<Result<T, TExtra>>;
+    insertAsync(returnInserted?: boolean): PromiseLike<Result<T, TExtra>>;
+    updateAsync(returnUpdated?: boolean): PromiseLike<Result<T, TExtra>>;
     deleteAsync(): PromiseLike<Result<void, TExtra>>;
 }
 
