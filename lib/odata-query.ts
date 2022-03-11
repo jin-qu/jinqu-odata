@@ -133,6 +133,42 @@ export class ODataQuery<
     protected createExpandedQuery<TNav>(part: IQueryPart): IExpandedODataQuery<T, TNav, TExtra> {
         return new ExpandedODataQuery<T, TNav, TOptions, TResponse, TExtra>(this.provider, [...this.parts, part]);
     }
+
+    public insertAsync(entity: T, returnInserted?: boolean): PromiseLike<Result<T, TExtra>> {
+        const options: AjaxOptions = {
+            method: "POST",
+            data: entity,
+        };
+        //if (returnInserted) {
+        //    options.headers = {
+        //        "prefer": "return=representation"
+        //    };
+        //}
+        const part = new QueryPart(AjaxFuncs.options, [PartArgument.literal(options)]);
+        return (this.provider as any).executeAsync([...this.parts, part]);
+    }
+
+    public updateAsync(entity: T, returnUpdated?: boolean): PromiseLike<Result<T, TExtra>> {
+        const options: AjaxOptions = {
+            method: "PUT",
+            data: entity,
+        };
+        if (returnUpdated) {
+            options.headers = {
+                "prefer": "return=representation"
+            };
+        }
+        const part = new QueryPart(AjaxFuncs.options, [PartArgument.literal(options)]);
+        return (this.provider as any).executeAsync([...this.parts, part]);
+    }
+
+    public deleteAsync(): PromiseLike<Result<void, TExtra>> {
+        const options: AjaxOptions = {
+            method: "DELETE"
+        };
+        const part = new QueryPart(AjaxFuncs.options, [PartArgument.literal(options)]);
+        return (this.provider as any).executeAsync([...this.parts, part]);
+    }
 }
 
 // tslint:disable-next-line:max-classes-per-file
@@ -196,6 +232,9 @@ export interface IODataQuery<T, TExtra = {}> extends IQueryBase {
     count(predicate?: Predicate<T>, ...scopes): PromiseLike<Result<number, TExtra>>;
     toArrayAsync(ctor?: Ctor<T>): PromiseLike<Result<T[], TExtra>>;
     singleAsync(ctor?: Ctor<T>): PromiseLike<Result<T, TExtra>>;
+    insertAsync(entity: T, returnInserted?: boolean): PromiseLike<Result<T, TExtra>>;
+    updateAsync(entity: T, returnUpdated?: boolean): PromiseLike<Result<T, TExtra>>;
+    deleteAsync(): PromiseLike<Result<void, TExtra>>;
 }
 
 export interface IOrderedODataQuery<T, TExtra = {}> extends IODataQuery<T, TExtra> {

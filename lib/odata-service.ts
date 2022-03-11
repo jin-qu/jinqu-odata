@@ -69,16 +69,17 @@ export class ODataService<TResponse = Response>
         return this.ajaxProvider.ajax(o)
             .then((r) => {
                 let value = r.value as any;
-                if (value && value.value !== void 0) {
-                    value = value.value;
-                }
-                else {
-                    //delete value["@odata.context"];
-                    Object.keys(value).forEach((key: string) => {
-                        if (key && key[0] === "@") {
-                            delete value[key];
-                        }
-                    });
+                if (value) {
+                    if (value.value !== void 0) {
+                        value = value.value;
+                    } else {
+                        //delete value["@odata.context"];
+                        Object.keys(value).forEach((key: string) => {
+                            if (key && key[0] === "@") {
+                                delete value[key];
+                            }
+                        });
+                    }
                 }
 
                 if (!inlineCountEnabled && !includeResponse) {

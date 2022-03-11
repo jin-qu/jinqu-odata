@@ -550,4 +550,18 @@ it("should handle date literal", async () => {
         const query2 = service.companies().byKey({ id: 7 });
         expect(() => query2.singleAsync()).to.throw();
     });
+
+    it("should handle updateAsync", async () => {
+        const value = getCompany();
+        const result = Object.assign({}, value);
+        const prv = new MockRequestProvider(result);
+        const query1 = new CompanyService(prv).companies().byKey(5);
+        const response1 = await query1.updateAsync(value);
+        const url1 = prv.options.url;
+        const expectedUrl1 = "api/Companies(5)";
+        expect(url1).equal(expectedUrl1);
+        expect(prv.options.method).equal("PUT");
+        expect(response1).to.deep.equal(value);
+    });
+
 });
