@@ -8,6 +8,10 @@ export class ODataQueryProvider<TOptions extends AjaxOptions, TResponse> impleme
     constructor(protected requestProvider: IRequestProvider<AjaxOptions>) {
     }
 
+    public get updateMethod(): "PATCH" | "PUT" {
+        return (this.requestProvider as any).options.updateMethod;
+    }
+
     public createQuery<T extends object>(parts?: IQueryPart[]): ODataQuery<T, TOptions, TResponse> {
         return new ODataQuery<T, TOptions, TResponse>(this, parts);
     }

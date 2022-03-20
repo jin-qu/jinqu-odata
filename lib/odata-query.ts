@@ -147,18 +147,18 @@ export class ODataQuery<
         //    };
         //}
         const part = new QueryPart(AjaxFuncs.options, [PartArgument.literal(options)]);
-        return (this.provider as any).executeAsync([...this.parts, part]);
+        return (this.provider as any).executeAsync([part, ...this.parts]);
     }
 
     public updateAsync(returnUpdated?: boolean): PromiseLike<Result<T, TExtra>> {
-        const options: AjaxOptions = { method: "PUT" };
+        const options: AjaxOptions = { method: (this.provider as any).updateMethod };
         if (returnUpdated) {
             options.headers = {
                 "prefer": "return=representation"
             };
         }
         const part = new QueryPart(AjaxFuncs.options, [PartArgument.literal(options)]);
-        return (this.provider as any).executeAsync([...this.parts, part]);
+        return (this.provider as any).executeAsync([part, ...this.parts]);
     }
 
     public deleteAsync(): PromiseLike<Result<void, TExtra>> {
@@ -166,7 +166,7 @@ export class ODataQuery<
             method: "DELETE"
         };
         const part = new QueryPart(AjaxFuncs.options, [PartArgument.literal(options)]);
-        return (this.provider as any).executeAsync([...this.parts, part]);
+        return (this.provider as any).executeAsync([part, ...this.parts]);
     }
 }
 

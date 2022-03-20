@@ -560,7 +560,7 @@ it("should handle date literal", async () => {
         const url1 = prv.options.url;
         const expectedUrl1 = "api/Companies(5)";
         expect(url1).equal(expectedUrl1);
-        expect(prv.options.method).equal("PUT");
+        expect(prv.options.method).equal("PATCH");
         expect(prv.options.data).equal(value);
         expect(prv.options.headers.prefer).equal("return=representation");
         expect(response1).to.deep.equal(value);
@@ -589,6 +589,30 @@ it("should handle date literal", async () => {
         expect(url1).equal(expectedUrl1);
         expect(prv.options.method).equal("DELETE");
         expect(response1).to.be.null; // .undefined ??
+    });
+
+    it("should handle updateAsync with PUT", async () => {
+        const query = service.createQuery<ICompany>("Companies")
+            .withOptions({ method: "PUT" });
+        expect(query.updateAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        expect(url).equal("api/Companies");
+        expect(provider.options.method).equal("PUT");
+    });
+
+    it("should handle ODataService options", async () => {
+        const svc = new ODataService({
+            baseAddress: "api",
+            ajaxProvider: provider,
+            updateMethod: "PUT"
+        });
+        const query = svc.createQuery<ICompany>("Companies");
+        expect(query.updateAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        expect(url).equal("api/Companies");
+        expect(provider.options.method).equal("PUT");
     });
 
 });

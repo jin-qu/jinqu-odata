@@ -9,24 +9,46 @@ import { ODataQuery } from "./odata-query";
 import { ODataQueryProvider } from "./odata-query-provider";
 import { ODataFuncs } from "./shared";
 
+export interface IODataServiceOptions<TResponse> {
+    baseAddress?: string;
+    ajaxProvider?: IAjaxProvider<TResponse>;
+    updateMethod?: "PATCH" | "PUT";
+}
+
 export class ODataService<TResponse = Response>
     implements IRequestProvider<AjaxOptions>  {
-    public static readonly defaultOptions: AjaxOptions = {};
 
-    constructor(
-        private readonly baseAddress = "",
-        private readonly ajaxProvider: IAjaxProvider<TResponse> = new FetchProvider() as any) {
+    public static readonly defaultAjaxOptions: AjaxOptions = {};
+
+    public options: IODataServiceOptions<TResponse>;
+
+    constructor(baseAddress?: string | null, ajaxProvider?: IAjaxProvider<TResponse>);
+    constructor(options?: IODataServiceOptions<TResponse>);
+    constructor(arg0?: string | IODataServiceOptions<TResponse>, arg1?: IAjaxProvider<TResponse>) {
+        if (typeof arg0 === "string" || typeof arg1 !== "undefined") {
+            this.options = {
+                baseAddress: arg0 as string,
+                ajaxProvider: arg1
+            }
+        } else if (typeof arg0 === "object" && typeof arg1 === "undefined") {
+            this.options = arg0;
+        }
+        // default options
+        if (!this.options) this.options = {};
+        if (!this.options.baseAddress) this.options.baseAddress = "";
+        if (!this.options.ajaxProvider) this.options.ajaxProvider = new FetchProvider() as any;
+        if (!this.options.updateMethod) this.options.updateMethod = "PATCH";
     }
 
     public request<TResult, TExtra>(params: QueryParameter[], options: AjaxOptions[])
         : PromiseLike<Result<TResult, TExtra>> {
-        const d = Object.assign({}, ODataService.defaultOptions);
+        const d = Object.assign({}, ODataService.defaultAjaxOptions);
         const o = (options || []).reduce(mergeAjaxOptions, d);
-        if (this.baseAddress) {
-            if (this.baseAddress[this.baseAddress.length - 1] !== "/" && o.url && o.url[0] !== "/") {
+        if (this.options.baseAddress) {
+            if (this.options.baseAddress[this.options.baseAddress.length - 1] !== "/" && o.url && o.url[0] !== "/") {
                 o.url = "/" + o.url;
             }
-            o.url = this.baseAddress + (o.url || "");
+            o.url = this.options.baseAddress + (o.url || "");
         }
 
         let includeResponse = false;
@@ -66,7 +88,7 @@ export class ODataService<TResponse = Response>
             }
         }
 
-        return this.ajaxProvider.ajax(o)
+        return this.options.ajaxProvider.ajax(o)
             .then((r) => {
                 let value = r.value as any;
                 if (value) {
