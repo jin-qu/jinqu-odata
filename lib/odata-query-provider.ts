@@ -20,7 +20,7 @@ export class ODataQueryProvider<TOptions extends AjaxOptions, TResponse> impleme
         const [queryParams, options, ctor] = handleParts(parts);
         const promise = this.requestProvider.request<TResult>(queryParams, options);
         return ctor
-            ? promise.then((d) => plainToClass(ctor, d))
+            ? promise.then(d => plainToClass(ctor, d))
             : promise;
     }
 }

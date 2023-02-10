@@ -112,7 +112,7 @@ export class ODataQuery<
 
     public toString() {
         const [queryParams] = handleParts(this.parts);
-        return queryParams.map((p) => `${p.key}=${p.value}`).join("&");
+        return queryParams.map(p => `${p.key}=${p.value}`).join("&");
     }
 
     protected create<TResult extends object = T, TNewExtra = TExtra>(part: IQueryPart)

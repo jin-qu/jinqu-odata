@@ -63,8 +63,8 @@ export class CompanyService extends ODataService {
 
 export function getCountries(): ICountry[] {
     return [
-        { name: "Uganda" },
-        { name: "Nauru" },
+        { name: "Uganda" },
+        { name: "Nauru" },
     ];
 }
 
