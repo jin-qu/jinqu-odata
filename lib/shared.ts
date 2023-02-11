@@ -10,18 +10,13 @@ import {
     VariableExpression,
 } from "jokenizer";
 
-export type SingleKey = string | number | bigint | boolean | null;// | Date;
-//export type CompositeKey<T> = { [K in keyof T]?: T[K] extends object ? never : T[K] };
-export type CompositeKey<T> = { [P in 
-    ({ [K in keyof T]: T[K] extends object ? never : K }[keyof T])
-]?: T[P] };
-
 export const ODataFuncs = {
     apply: "apply",
     byKey: "byKey",
     expand: "expand",
     filter: "filter",
     oDataSelect: "oDataSelect",
+    setData: "setData",
     thenExpand: "thenExpand",
     top: "top",
 };
@@ -29,16 +24,18 @@ export const ODataFuncs = {
 const orderFuncs = [QueryFunc.orderBy, QueryFunc.orderByDescending];
 const thenFuncs = [QueryFunc.thenBy, QueryFunc.thenByDescending];
 const descFuncs = [QueryFunc.orderByDescending, QueryFunc.thenByDescending];
-const otherFuncs = [QueryFunc.inlineCount, QueryFunc.skip, QueryFunc.count, ODataFuncs.filter, ODataFuncs.top];
+const otherFuncs = [QueryFunc.inlineCount, QueryFunc.skip, QueryFunc.count, ODataFuncs.top];
 const mathFuncs = ["round", "floor", "ceiling"];
 const aggregateFuncs = ["sum", "max", "min"];
 const functions = {
     getDate: "day",
+    getDatePart: "date",
     getFullYear: "year",
     getHours: "hour",
     getMinutes: "minute",
     getMonth: "month",
     getSeconds: "second",
+    getTimePart: "time",
     includes: "contains",
     substr: "substring",
     toLowerCase: "tolower",
@@ -57,6 +54,8 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
     const params = {};
     const queryParams: QueryParameter[] = [];
     const expands: IQueryPart[] = [];
+    const filters: IQueryPart[] = [];
+    let data: IQueryPart;
     let byKey: IQueryPart;
     let inlineCount = false;
     let includeResponse = false;
@@ -91,10 +90,14 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
         } else if (part.type === ODataFuncs.apply) {
             ctor = null;
             apply = part;
+        } else if (part.type === ODataFuncs.setData) {
+            data = part;
         } else if (orderFuncs.indexOf(part.type) !== -1) {
             orders = [part];
         } else if (thenFuncs.indexOf(part.type) !== -1) {
             orders.push(part);
+        } else if (part.type === ODataFuncs.filter) {
+            filters.push(part);
         } else if (otherFuncs.indexOf(part.type) !== -1) {
             params[part.type] = part.args[0];
         } else {
@@ -109,12 +112,10 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
             if (typeof argVal === "object") {
                 if (Object.keys(argVal).length > 1) {
                     keyVal = Object.keys(argVal).map((key: string) => `${key}=${quoteIfString(argVal[key])}`).join(",");
-                }
-                else {
+                } else {
                     throw new Error("Composite key must have at least two properties.");
                 }
-            }
-            else {
+            } else {
                 keyVal = quoteIfString(argVal);
             }
         }
@@ -169,6 +170,13 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
         queryParams.push({ key: AjaxFuncs.includeResponse, value: "" });
     }
 
+    if (filters.length) {
+        const value = filters.map((o) => {
+            return handlePartArg(o.args[0]);
+        }).join(" and ");
+        queryParams.push({ key: "$filter", value });
+    }
+
     for (const p in params) {
         if (params.hasOwnProperty(p)) {
             queryParams.push({ key: "$" + p, value: handlePartArg(params[p]) });
@@ -183,6 +191,10 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
         } else {
             queryParams.push({ key: "$apply", value: `groupby((${keySelector}))` });
         }
+    }
+
+    if (data) {
+        options.push({ data: data.args[0].literal });
     }
 
     return [queryParams, options, ctor];
@@ -303,6 +315,12 @@ function  funcToStr(exp: FuncExpression, scopes: any[], parameters: string[]) {
 function  callToStr(exp: CallExpression, scopes: any[], parameters: string[]) {
     const callee = exp.callee as MemberExpression;
     if (callee.type !== ExpressionType.Member) {
+        if (callee.type === ExpressionType.Variable) {
+            // handle Date literal
+            if (callee.name === "Date" && exp.args[0].type === ExpressionType.Literal) {
+                return (exp.args[0] as LiteralExpression).value;
+            }
+        }
         throw new Error(`Invalid function call ${expToStr(exp.callee, scopes, parameters)}`);
     }
 
@@ -336,7 +354,7 @@ function  callToStr(exp: CallExpression, scopes: any[], parameters: string[]) {
 
 function  valueToStr(value) {
     if (Object.prototype.toString.call(value) === "[object Date]") {
-        return `datetime'${value.toISOString()}'`;
+        return `${value.toISOString()}`;
     }
 
     if (value == null) {
@@ -346,6 +364,9 @@ function  valueToStr(value) {
     if (typeof value === "string") {
         return `'${value.replace(/'/g, "''")}'`;
     }
+
+    if (typeof value === "number")
+        return value.toString();
 
     if (typeof value === "boolean")
         return value.toString();

@@ -4,7 +4,13 @@ import {
     PartArgument, Predicate, QueryPart, Result,
 } from "jinqu";
 import { InlineCountInfo } from "jinqu";
-import { handleParts, ODataFuncs, SingleKey, CompositeKey } from "./shared";
+import { handleParts, ODataFuncs } from "./shared";
+
+export type SingleKey = string | number | bigint | boolean | null;// | Date;
+//export type CompositeKey<T> = { [K in keyof T]?: T[K] extends object ? never : T[K] };
+export type CompositeKey<T> = { [P in
+    ({ [K in keyof T]: T[K] extends object ? never : K }[keyof T])
+]?: T[P] };
 
 export class ODataQuery<
     T extends object,
@@ -26,6 +32,11 @@ export class ODataQuery<
     public includeResponse(): ODataQuery<T, TOptions, TResponse, TExtra & AjaxResponse<TResponse>> {
         const part = new QueryPart(AjaxFuncs.includeResponse, []);
         return this.create(part) as any;
+    }
+
+    public setData(value: any): IODataQuery<T, TExtra> {
+        const part = new QueryPart(ODataFuncs.setData, [PartArgument.literal(value)]);
+        return this.create(part);
     }
 
     public byKey(key: SingleKey | CompositeKey<T>): IODataQuery<T, TExtra> {
@@ -127,6 +138,36 @@ export class ODataQuery<
     protected createExpandedQuery<TNav>(part: IQueryPart): IExpandedODataQuery<T, TNav, TExtra> {
         return new ExpandedODataQuery<T, TNav, TOptions, TResponse, TExtra>(this.provider, [...this.parts, part]);
     }
+
+    public insertAsync(returnInserted?: boolean): PromiseLike<Result<T, TExtra>> {
+        const options: AjaxOptions = { method: "POST" };
+        //if (returnInserted) {
+        //    options.headers = {
+        //        "prefer": "return=representation"
+        //    };
+        //}
+        const part = new QueryPart(AjaxFuncs.options, [PartArgument.literal(options)]);
+        return (this.provider as any).executeAsync([part, ...this.parts]);
+    }
+
+    public updateAsync(returnUpdated?: boolean): PromiseLike<Result<T, TExtra>> {
+        const options: AjaxOptions = { method: (this.provider as any).updateMethod };
+        if (returnUpdated) {
+            options.headers = {
+                "prefer": "return=representation"
+            };
+        }
+        const part = new QueryPart(AjaxFuncs.options, [PartArgument.literal(options)]);
+        return (this.provider as any).executeAsync([part, ...this.parts]);
+    }
+
+    public deleteAsync(): PromiseLike<Result<void, TExtra>> {
+        const options: AjaxOptions = {
+            method: "DELETE"
+        };
+        const part = new QueryPart(AjaxFuncs.options, [PartArgument.literal(options)]);
+        return (this.provider as any).executeAsync([part, ...this.parts]);
+    }
 }
 
 // tslint:disable-next-line:max-classes-per-file
@@ -188,8 +229,12 @@ export interface IODataQuery<T, TExtra = {}> extends IQueryBase {
         keySelector: Func1<T, TKey>, elementSelector?: Func1<T[] & TKey, TResult>, ...scopes: any[])
         : PromiseLike<Result<TResult[], TExtra>>;
     count(predicate?: Predicate<T>, ...scopes): PromiseLike<Result<number, TExtra>>;
+    setData(value: any): IODataQuery<T, TExtra>;
     toArrayAsync(ctor?: Ctor<T>): PromiseLike<Result<T[], TExtra>>;
     singleAsync(ctor?: Ctor<T>): PromiseLike<Result<T, TExtra>>;
+    insertAsync(returnInserted?: boolean): PromiseLike<Result<T, TExtra>>;
+    updateAsync(returnUpdated?: boolean): PromiseLike<Result<T, TExtra>>;
+    deleteAsync(): PromiseLike<Result<void, TExtra>>;
 }
 
 export interface IOrderedODataQuery<T, TExtra = {}> extends IODataQuery<T, TExtra> {

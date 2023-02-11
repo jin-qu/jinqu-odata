@@ -176,6 +176,16 @@ describe("Service tests", () => {
         expect(url).equal(expectedUrl);
     });
 
+    it("should handle filter parameter with zero value", async () => {
+        const val = 0;
+        const query = service.companies().where("c => c.id >= val", { val });
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent("id ge 0")}`;
+        expect(url).equal(expectedUrl);
+    });
+
     it("should handle order and then descending parameters", () => {
         const query = service.companies().orderBy(c => c.id).thenByDescending(c => c.name);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
@@ -388,7 +398,30 @@ describe("Service tests", () => {
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
-        const expectedPrm = `createDate lt datetime'${date.toISOString()}' and name ne null`;
+        const expectedPrm = `createDate lt ${date.toISOString()} and name ne null`;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
+        expect(url).equal(expectedUrl);
+    });
+
+it("should handle date member func", async () => {
+    const date = new Date(1592, 2, 14);
+    const query = service.companies().where("(c) => c.createDate.getDatePart() >= date", { date });
+    expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+    const url = provider.options.url;
+    const expectedPrm = `date(createDate) ge ${date.toISOString()}`;
+    const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
+    expect(url).equal(expectedUrl);
+});
+
+it("should handle date literal", async () => {
+        const date = new Date(1592, 2, 14);
+        const literal = `Date('${date.toISOString()}')`;
+        const query = service.companies().where(`createDate == ${literal}`);
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedPrm = `createDate eq ${date.toISOString()}`;
         const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
         expect(url).equal(expectedUrl);
     });
@@ -405,6 +438,16 @@ describe("Service tests", () => {
 
         const expectedQuery = `$filter=${expectedPrm}`;
         expect(query.toString()).equal(expectedQuery);
+    });
+
+    it("should handle chained filters", async () => {
+        const query = service.companies().where(c => c.id >= 27).where(c => c.name.startsWith("Net"));
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedPrm = "id ge 27 and startswith(name,'Net')";
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
+        expect(url).equal(expectedUrl);
     });
 
     it("should handle cast", async () => {
@@ -449,8 +492,25 @@ describe("Service tests", () => {
         result.forEach(r => expect(r).to.be.instanceOf(Company));
     });
 
+    it("should handle cast via toArrayAsync with inlineCount", async () => {
+        const prv = new MockRequestProvider({ value: getCompanies() });
+        const svc = new ODataService("api", prv);
+        const result = await svc.createQuery<ICompany>("Companies").inlineCount().toArrayAsync(Company);
+
+        result.value.forEach((r) => expect(r).to.be.instanceOf(Company));
+    });
 
     it('should handle boolean parameters', () => {
+        const query = service.companies()
+            .where('c => c.deleted === boolVar', { boolVar: false });
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent("deleted eq false")}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it('should handle Date parameters', () => {
         const query = service.companies()
             .where('c => c.deleted === boolVar', { boolVar: false });
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
@@ -477,7 +537,7 @@ describe("Service tests", () => {
         const expectedUrl2 = "api/Companies('id5')";
         expect(url2).equal(expectedUrl2);
     });
-    
+
     it("should handle byKey({composite})", async () => {
         const query1 = service.companies().byKey({ id: 7, name: "Microsoft" });
         expect(query1.singleAsync()).to.be.fulfilled.and.eventually.be.null;
@@ -485,9 +545,74 @@ describe("Service tests", () => {
         const expectedUrl1 = "api/Companies(id=7,name='Microsoft')";
         expect(url1).equal(expectedUrl1);
     });
-    
+
     it("should throw for invalid composite key", async () => {
         const query2 = service.companies().byKey({ id: 7 });
         expect(() => query2.singleAsync()).to.throw();
     });
+
+    it("should handle updateAsync", async () => {
+        const value = getCompany();
+        const result = Object.assign({}, value);
+        const prv = new MockRequestProvider(result);
+        const query1 = new CompanyService(prv).companies().byKey(5).setData(value);
+        const response1 = await query1.updateAsync(true);
+        const url1 = prv.options.url;
+        const expectedUrl1 = "api/Companies(5)";
+        expect(url1).equal(expectedUrl1);
+        expect(prv.options.method).equal("PATCH");
+        expect(prv.options.data).equal(value);
+        expect(prv.options.headers.prefer).equal("return=representation");
+        expect(response1).to.deep.equal(value);
+    });
+
+    it("should handle insertAsync", async () => {
+        const value = getCompany();
+        const result = Object.assign({}, value);
+        const prv = new MockRequestProvider(result);
+        const query1 = new CompanyService(prv).companies().setData(value);
+        const response1 = await query1.insertAsync();
+        const url1 = prv.options.url;
+        const expectedUrl1 = "api/Companies";
+        expect(url1).equal(expectedUrl1);
+        expect(prv.options.method).equal("POST");
+        expect(prv.options.data).equal(value);
+        expect(response1).to.deep.equal(value);
+    });
+
+    it("should handle deleteAsync", async () => {
+        const prv = new MockRequestProvider();
+        const query1 = new CompanyService(prv).companies().byKey(5);
+        const response1 = await query1.deleteAsync();
+        const url1 = prv.options.url;
+        const expectedUrl1 = "api/Companies(5)";
+        expect(url1).equal(expectedUrl1);
+        expect(prv.options.method).equal("DELETE");
+        expect(response1).to.be.null; // .undefined ??
+    });
+
+    it("should handle updateAsync with PUT", async () => {
+        const query = service.createQuery<ICompany>("Companies")
+            .withOptions({ method: "PUT" });
+        expect(query.updateAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        expect(url).equal("api/Companies");
+        expect(provider.options.method).equal("PUT");
+    });
+
+    it("should handle ODataService options", async () => {
+        const svc = new ODataService({
+            baseAddress: "api",
+            ajaxProvider: provider,
+            updateMethod: "PUT"
+        });
+        const query = svc.createQuery<ICompany>("Companies");
+        expect(query.updateAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        expect(url).equal("api/Companies");
+        expect(provider.options.method).equal("PUT");
+    });
+
 });
