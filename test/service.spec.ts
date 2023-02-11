@@ -34,7 +34,7 @@ describe("Service tests", () => {
     });
 
     it("should throw for unsupported expression", async () => {
-        const query = service.companies().where((c) => c.name[1] === "a");
+        const query = service.companies().where(c => c.name[1] === "a");
         expect(() => query.toArrayAsync()).to.throw();
     });
 
@@ -147,7 +147,7 @@ describe("Service tests", () => {
 
     it("should handle filter parameter", async () => {
         const query = service.companies()
-            .where((c) => c.id === 4 && (!c.addresses.any((a) => a.id > 1000) || c.addresses.all((a) => a.id >= 1000)));
+            .where(c => c.id === 4 && (!c.addresses.any(a => a.id > 1000) || c.addresses.all(a => a.id >= 1000)));
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -187,7 +187,7 @@ describe("Service tests", () => {
     });
 
     it("should handle order and then descending parameters", () => {
-        const query = service.companies().orderBy((c) => c.id).thenByDescending((c) => c.name);
+        const query = service.companies().orderBy(c => c.id).thenByDescending(c => c.name);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -196,7 +196,7 @@ describe("Service tests", () => {
     });
 
     it("should handle order descending and then ascending parameters", () => {
-        const query = service.companies().orderByDescending((c) => c.id).thenBy((c) => c.name);
+        const query = service.companies().orderByDescending(c => c.id).thenBy(c => c.name);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -234,8 +234,8 @@ describe("Service tests", () => {
         const id = 42;
         const query = service.companies()
             .expand("addresses", ["city"])
-            .expand("addresses", (a) => a.id > id, { id })
-            .thenExpand("city", (c) => c.name === options.city, { options })
+            .expand("addresses", a => a.id > id, { id })
+            .thenExpand("city", c => c.name === options.city, { options })
             .thenExpand("country");
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
@@ -250,7 +250,7 @@ describe("Service tests", () => {
             .expand("addresses")
             .expand("addresses", ["city"])
             .thenExpand("city", ["country"])
-            .thenExpand("country", ["name"], (c) => c.name !== "Gilead");
+            .thenExpand("country", ["name"], c => c.name !== "Gilead");
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -293,7 +293,7 @@ describe("Service tests", () => {
 
     it("should handle count with filter", () => {
         const query = service.companies();
-        expect(query.count((c) => c.id > 5)).to.be.fulfilled.and.eventually.be.null;
+        expect(query.count(c => c.id > 5)).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
         const expectedUrl = `api/Companies/$count/?$filter=${encodeURIComponent("id gt 5")}`;
@@ -302,7 +302,7 @@ describe("Service tests", () => {
 
     it("should handle groupby", () => {
         const query = service.companies();
-        expect(query.groupBy((c) => ({ deleted: c.deleted }))).to.be.fulfilled.and.eventually.be.null;
+        expect(query.groupBy(c => ({ deleted: c.deleted }))).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
         const expectedUrl = "api/Companies?$apply=groupby((deleted))";
@@ -312,8 +312,8 @@ describe("Service tests", () => {
     it("should handle groupby with count aggregation", () => {
         const query = service.companies();
         const promise = query.groupBy(
-            (c) => ({ deleted: c.deleted, addresses: c.addresses }),
-            (g) => ({ deleted: g.deleted, addressCount: g.addresses.count(), count: g.count() }),
+            c => ({ deleted: c.deleted, addresses: c.addresses }),
+            g => ({ deleted: g.deleted, addressCount: g.addresses.count(), count: g.count() }),
         );
         expect(promise).to.be.fulfilled.and.eventually.be.null;
 
@@ -327,8 +327,8 @@ describe("Service tests", () => {
     it("should handle groupby with sum aggregation", () => {
         const query = service.companies();
         const promise = query.groupBy(
-            (c) => ({ deleted: c.deleted }),
-            (g) => ({ deleted: g.deleted, sumId: g.sum((x) => x.id) }),
+            c => ({ deleted: c.deleted }),
+            g => ({ deleted: g.deleted, sumId: g.sum(x => x.id) }),
         );
         expect(promise).to.be.fulfilled.and.eventually.be.null;
 
@@ -339,7 +339,7 @@ describe("Service tests", () => {
     });
 
     it("should handle length", async () => {
-        const query = service.companies().where((c) => c.name.length < 5);
+        const query = service.companies().where(c => c.name.length < 5);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -348,7 +348,7 @@ describe("Service tests", () => {
     });
 
     it("should handle round function", async () => {
-        const query = service.companies().where((c) => Math.round(c.id) <= 5);
+        const query = service.companies().where(c => Math.round(c.id) <= 5);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -357,7 +357,7 @@ describe("Service tests", () => {
     });
 
     it("should handle substringof function", async () => {
-        const query = service.companies().where((c) => c.name.includes("flix"));
+        const query = service.companies().where(c => c.name.includes("flix"));
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -366,7 +366,7 @@ describe("Service tests", () => {
     });
 
     it("should handle substr function", async () => {
-        const query = service.companies().where((c) => c.name.substr(0, 2) === "Ne");
+        const query = service.companies().where(c => c.name.substr(0, 2) === "Ne");
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -375,7 +375,7 @@ describe("Service tests", () => {
     });
 
     it("should handle lower function", async () => {
-        const query = service.companies().where((c) => c.name.toLowerCase() === "netflix");
+        const query = service.companies().where(c => c.name.toLowerCase() === "netflix");
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -384,7 +384,7 @@ describe("Service tests", () => {
     });
 
     it("should handle startsWith function", async () => {
-        const query = service.companies().where((c) => c.name.startsWith("Net"));
+        const query = service.companies().where(c => c.name.startsWith("Net"));
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -394,7 +394,7 @@ describe("Service tests", () => {
 
     it("should handle date", async () => {
         const date = new Date(1592, 2, 14);
-        const query = service.companies().where((c) => c.createDate < date && c.name != null, { date });
+        const query = service.companies().where(c => c.createDate < date && c.name != null, { date });
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -428,7 +428,7 @@ it("should handle date literal", async () => {
 
     it("should handle other operators", async () => {
         const query = service.companies()
-            .where((c) => ((c.id + 4 - 2) * 4 / 2) % 2 === 1 && c.id !== 42 && -c.id !== 19);
+            .where(c => ((c.id + 4 - 2) * 4 / 2) % 2 === 1 && c.id !== 42 && -c.id !== 19);
         expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
 
         const url = provider.options.url;
@@ -455,7 +455,7 @@ it("should handle date literal", async () => {
         const svc = new ODataService("api", prv);
         const result = await svc.createQuery<ICompany>("Companies").cast(Company).toArrayAsync();
 
-        result.forEach((r) => expect(r).to.be.instanceOf(Company));
+        result.forEach(r => expect(r).to.be.instanceOf(Company));
     });
 
     it("should handle cast via createQuery", async () => {
@@ -463,7 +463,7 @@ it("should handle date literal", async () => {
         const svc = new ODataService("api", prv);
         const result = await svc.createQuery<ICompany>("Companies", Company).toArrayAsync();
 
-        result.forEach((r) => expect(r).to.be.instanceOf(Company));
+        result.forEach(r => expect(r).to.be.instanceOf(Company));
     });
 
     it("should handle cast via createQuery with decorator", async () => {
@@ -472,7 +472,7 @@ it("should handle date literal", async () => {
         const result = await svc.createQuery<ICompany>(Company).toArrayAsync();
 
         expect(prv.options.url).equal("api/Companies");
-        result.forEach((r) => expect(r).to.be.instanceOf(Company));
+        result.forEach(r => expect(r).to.be.instanceOf(Company));
     });
 
     it("should handle cast via createQuery without decorator", async () => {
@@ -481,7 +481,7 @@ it("should handle date literal", async () => {
         const result = await svc.createQuery<ICountry>(Country).toArrayAsync();
 
         expect(prv.options.url).equal("api/Country");
-        result.forEach((r) => expect(r).to.be.instanceOf(Country));
+        result.forEach(r => expect(r).to.be.instanceOf(Country));
     });
 
     it("should handle cast via toArrayAsync", async () => {
@@ -489,7 +489,7 @@ it("should handle date literal", async () => {
         const svc = new ODataService("api", prv);
         const result = await svc.createQuery<ICompany>("Companies").toArrayAsync(Company);
 
-        result.forEach((r) => expect(r).to.be.instanceOf(Company));
+        result.forEach(r => expect(r).to.be.instanceOf(Company));
     });
 
     it("should handle cast via toArrayAsync with inlineCount", async () => {

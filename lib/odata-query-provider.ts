@@ -23,7 +23,6 @@ export class ODataQueryProvider<TOptions extends AjaxOptions, TResponse> impleme
     public executeAsync<T = any, TResult = T[]>(parts: IQueryPart[]): PromiseLike<TResult> {
         const [queryParams, options, ctor] = handleParts(parts);
         const promise = this.requestProvider.request<TResult>(queryParams, options);
-
         if (ctor) {
             return promise.then((d: any) => {
                 if ((d.inlineCount !== void 0 || d.response) && d.value !== void 0) {

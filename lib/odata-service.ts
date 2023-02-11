@@ -57,7 +57,7 @@ export class ODataService<TResponse = Response>
         o.params = o.params || [];
         params = params || [];
         let inlineCountEnabled = false;
-        params.forEach((p) => {
+        params.forEach(p => {
             if (p.key === ODataFuncs.byKey) {
                 keyPrm = p;
             } else if (p.key === QueryFunc.inlineCount) {
@@ -77,7 +77,7 @@ export class ODataService<TResponse = Response>
         }
 
         if (o.params.length) {
-            o.url += "?" + o.params.map((p) => `${p.key}=${encodeURIComponent(p.value)}`).join("&");
+            o.url += "?" + o.params.map(p => `${p.key}=${encodeURIComponent(p.value)}`).join("&");
         }
         o.params = [];
 

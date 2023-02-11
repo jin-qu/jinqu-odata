@@ -124,7 +124,7 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
     }
 
     if (orders.length) {
-        const value = orders.map((o) => {
+        const value = orders.map(o => {
             const v = handlePartArg(o.args[0]);
             return descFuncs.indexOf(o.type) !== -1 ? (v + " desc") : v;
         }).join(",");
@@ -138,7 +138,7 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
     if (expands.length) {
         const es: ExpandCollection = {};
         let ce: ExpandContainer;
-        expands.forEach((e) => {
+        expands.forEach(e => {
             const exp = e.args[0].literal;
             const sel = e.args[1].literal;
             const fil = handlePartArg(e.args[2]);
@@ -259,7 +259,7 @@ function  variableToStr(exp: VariableExpression, scopes: any[], parameters: stri
         return "";
     }
 
-    const scope = scopes && scopes.find((s) => name in s);
+    const scope = scopes && scopes.find(s => name in s);
     return (scope && valueToStr(scope[name])) || name;
 }
 
@@ -268,11 +268,11 @@ function  unaryToStr(exp: UnaryExpression, scopes: any[], parameters: string[]) 
 }
 
 function  groupToStr(exp: GroupExpression, scopes: any[], parameters: string[]) {
-    return `(${exp.expressions.map((e) => expToStr(e, scopes, parameters)).join(",")})`;
+    return `(${exp.expressions.map(e => expToStr(e, scopes, parameters)).join(",")})`;
 }
 
 function  objectToStr(exp: ObjectExpression, scopes: any[], parameters: string[]) {
-    return exp.members.map((m) => {
+    return exp.members.map(m => {
         const e = expToStr(m.right, scopes, parameters);
         return e === m.name ? e : `${e} as ${m.name}`;
     }).join(",");
@@ -335,7 +335,7 @@ function  callToStr(exp: CallExpression, scopes: any[], parameters: string[]) {
         return `${handleExp(exp.args[0], scopes)} with ${callee.name}`;
     }
 
-    args = exp.args.map((a) => expToStr(a, scopes, parameters)).join(",");
+    args = exp.args.map(a => expToStr(a, scopes, parameters)).join(",");
     // handle Math functions
     if (mathFuncs.indexOf(callee.name) !== -1 && ownerStr === "Math") {
         return `${callee.name}(${args})`;
