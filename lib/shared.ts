@@ -294,7 +294,7 @@ function  memberToStr(exp: MemberExpression, scopes: any[], parameters: string[]
     }
 
     if (typeof owner === "object") {
-        return valueToStr(owner[exp.name]);
+        return valueToStr(owner![exp.name]);
     }
 
     if (exp.name === "length") {

@@ -6,6 +6,7 @@
     "outDir": "./dist",
     "declaration": true,
     "downlevelIteration": true,
+    "experimentalDecorators": true,
     "sourceMap": true,
     "strictFunctionTypes": false,
     "lib": [
