@@ -392,6 +392,24 @@ describe("Service tests", () => {
         expect(url).equal(expectedUrl);
     });
 
+    it("should handle Array.includes as lambda", async () => {
+        const query = service.companies().where((c) => ["Netflix","Tesla"].includes(c.name));
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent("name in ('Netflix','Tesla')")}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it("should handle empty Array.includes as string", async () => {
+        const query = service.companies().where("[].includes(id)");
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent("id in ()")}`;
+        expect(url).equal(expectedUrl);
+    });
+
     it("should handle date", async () => {
         const date = new Date(1592, 2, 14);
         const query = service.companies().where(c => c.createDate < date && c.name != null, { date });
@@ -529,7 +547,7 @@ it("should handle date literal", async () => {
         const url1 = prv.options.url;
         const expectedUrl1 = "api/Companies(5)";
         expect(url1).equal(expectedUrl1);
-        expect(response1).to.deep.equal(value);
+        expect(response1).to.deep.equal(result);
 
         const query2 = service.companies().byKey("id5");
         expect(query2.singleAsync()).to.be.fulfilled.and.eventually.be.null;
@@ -549,6 +567,30 @@ it("should handle date literal", async () => {
     it("should throw for invalid composite key", async () => {
         const query2 = service.companies().byKey({ id: 7 });
         expect(() => query2.singleAsync()).to.throw();
+    });
+
+    it("should handle navigateTo", () => {
+        const query = service.companies()
+            .byKey(5)
+            .navigateTo(c => c.address)
+            .select("id", "text");
+        expect(query.singleAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `api/Companies(5)/address?$select=${encodeURIComponent("id,text")}`;
+        expect(url).equal(expectedUrl);
+    });
+
+    it("should handle navigateTo many", () => {
+        const query = service.companies()
+            .byKey(5)
+            .navigateTo(c => c.addresses)
+            .where(a => a.text === 'nice');
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        const url = provider.options.url;
+        const expectedUrl = `api/Companies(5)/addresses?$filter=${encodeURIComponent("text eq 'nice'")}`;
+        expect(url).equal(expectedUrl);
     });
 
     it("should handle updateAsync", async () => {
@@ -601,6 +643,34 @@ it("should handle date literal", async () => {
         expect(provider.options.method).equal("PUT");
     });
 
+    it("should handle bound action", async () => {
+        const value = { days: 30 };
+        const prv = new MockRequestProvider();
+        const query1 = new CompanyService(prv).companies().byKey(5)
+            .action("Lock").setData(value);
+        const response1 = await query1.executeAsync();
+        const url1 = prv.options.url;
+        const expectedUrl1 = "api/Companies(5)/Lock";
+        expect(url1).equal(expectedUrl1);
+        expect(prv.options.method).equal("POST");
+        expect(prv.options.data).equal(value);
+        expect(response1).to.be.null; // .undefined ??
+    });
+
+    it("should handle bound function", async () => {
+        const value = getCompany();
+        const result = Object.assign({}, value);
+        const prv = new MockRequestProvider(result);
+        const params = { country: "USA", revenue: 30000 };
+        const query1 = new CompanyService(prv).companies().byKey(5)
+            .function("GetContractor").withParameters(params);
+        const response1 = await query1.executeAsync<ICompany>();
+        const url1 = prv.options.url;
+        const expectedUrl1 = "api/Companies(5)/GetContractor(country='USA',revenue=30000)";
+        expect(url1).equal(expectedUrl1);
+        expect(response1).to.deep.equal(value);
+    });
+
     it("should handle ODataService options", async () => {
         const svc = new ODataService({
             baseAddress: "api",
@@ -614,5 +684,24 @@ it("should handle date literal", async () => {
         expect(url).equal("api/Companies");
         expect(provider.options.method).equal("PUT");
     });
+
+    it("should substitute header", async () => {
+        const svc = new ODataService({
+            ajaxProvider: provider,
+            ajaxInterceptor: {
+                intercept: (options) => {
+                    options.headers = Object.assign({}, options.headers, { Authorization: "67890" } );
+                    return options;
+                }
+            }
+        });
+        const query = svc.createQuery<ICompany>("Companies")
+            .withOptions({ headers: { "Accept": "qwerty", Authorization: "12345" } });
+        expect(query.toArrayAsync()).to.be.fulfilled.and.eventually.be.null;
+
+        expect(provider.options.headers).property("Accept").is.equal("qwerty");
+        expect(provider.options.headers).property("Authorization").is.equal("67890");
+    });
+
 
 });
