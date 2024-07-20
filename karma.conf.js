@@ -1,5 +1,7 @@
+process.env.EDGE_BIN = require('puppeteer').executablePath();
+
 const browsers = process.platform === "win32" ?
-    ["ChromeHeadless", "FirefoxHeadless", "IE"] :
+    ["ChromeHeadless", "FirefoxHeadless", "EdgeHeadless"] :
     ["ChromeHeadless", "FirefoxHeadless"];
 
 module.exports = function (config) {
