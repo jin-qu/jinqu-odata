@@ -1,14 +1,12 @@
 import {
     AjaxFuncs, AjaxOptions, Ctor, IPartArgument,
-    IQueryPart, IQueryProvider, IRequestProvider, QueryFunc, QueryParameter,
+    IQueryPart, QueryFunc, QueryParameter,
 } from "jinqu";
 import {
-    ArrayExpression,
-    AssignExpression, BinaryExpression,
-    CallExpression, Expression, ExpressionType,
-    FuncExpression, GroupExpression, LiteralExpression,
-    MemberExpression, ObjectExpression, UnaryExpression,
-    VariableExpression,
+    ArrayExpression, BinaryExpression, CallExpression,
+    Expression, ExpressionType, FuncExpression,
+    GroupExpression, LiteralExpression, MemberExpression,
+    ObjectExpression, UnaryExpression, VariableExpression,
 } from "jokenizer";
 
 export const ODataFuncs = {
@@ -52,10 +50,10 @@ interface ExpandCollection { [expand: string]: ExpandContainer; }
 
 let rootLambda: boolean;
 
-export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions[], Ctor<any>] {
+export function handleParts<TOptions extends AjaxOptions>(parts: IQueryPart[]): [QueryParameter[], TOptions[], Ctor<any>] {
     rootLambda = true;
 
-    const options: AjaxOptions[] = [];
+    const options: TOptions[] = [];
     const params = {};
     const queryParams: QueryParameter[] = [];
     const expands: IQueryPart[] = [];
@@ -78,13 +76,12 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
 
     for (const part of parts) {
         if (part.type === AjaxFuncs.options) {
-            options.push(part.args[0].literal);
+            options.push(part.args[0].literal as TOptions);
         } else if (part.type === QueryFunc.cast) {
-            ctor = part.args[0].literal;
+            ctor = part.args[0].literal as any;
         } else if (part.type === QueryFunc.toArray
             || part.type === QueryFunc.first
             || part.type === QueryFunc.single) {
-            continue;
         } else if (part.type === QueryFunc.inlineCount) {
             inlineCount = true;
         } else if (part.type === AjaxFuncs.includeResponse) {
@@ -114,9 +111,8 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
             filters.push(part);
         } else if (otherFuncs.indexOf(part.type) !== -1) {
             params[part.type] = part.args[0];
-        } else {
+        } else
             throw new Error(`${part.type} is not supported.`);
-        }
     }
 
     if (byKey) {
@@ -143,7 +139,7 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
     }
 
     if (actOrFunc) {
-        const v = actOrFunc.args[0].literal;
+        const v = actOrFunc.args[0].literal as string;
         queryParams.push({ key: actOrFunc.type, value: v });
     }
 
@@ -174,15 +170,16 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
     }
 
     if (select) {
-        queryParams.push({ key: "$select", value: select.args[0].literal.join(",") });
+        const l = select.args[0].literal as string[];
+        queryParams.push({ key: "$select", value: l.join(",") });
     }
 
     if (expands.length) {
         const es: ExpandCollection = {};
         let ce: ExpandContainer;
         expands.forEach(e => {
-            const exp = e.args[0].literal;
-            const sel = e.args[1].literal;
+            const exp = e.args[0].literal as string;
+            const sel = e.args[1].literal as string;
             const fil = handlePartArg(e.args[2]);
 
             let col: ExpandCollection;
@@ -236,19 +233,19 @@ export function handleParts(parts: IQueryPart[]): [QueryParameter[], AjaxOptions
     }
 
     if (data) {
-        options.push({ data: data.args[0].literal });
+        options.push({ $data: data.args[0].literal } as TOptions);
     }
 
     return [queryParams, options, ctor];
 }
 
-function  handlePartArg(arg: IPartArgument): string {
+function handlePartArg(arg: IPartArgument): string {
     return arg.literal != null || arg.exp == null
-        ? arg.literal
+        ? arg.literal as string
         : handleExp(arg.exp, arg.scopes);
 }
 
-function  handleExp(exp: Expression, scopes: any[]) {
+function handleExp(exp: Expression, scopes: any[]) {
     const rl = rootLambda;
     rootLambda = true;
     const parameters = exp.type === ExpressionType.Func ? (exp as FuncExpression).parameters : [];
@@ -257,7 +254,7 @@ function  handleExp(exp: Expression, scopes: any[]) {
     return retVal;
 }
 
-function  expToStr(exp: Expression, scopes: any[], parameters: string[]): string {
+function expToStr(exp: Expression, scopes: any[], parameters: string[]): string {
     switch (exp.type) {
         case ExpressionType.Literal:
             return literalToStr(exp as LiteralExpression);
@@ -268,14 +265,12 @@ function  expToStr(exp: Expression, scopes: any[], parameters: string[]): string
         case ExpressionType.Group:
             // little hack to workaround object grouping
             // "c => ({ id: c.id })" expression generates "(id)" and OData does not support that
-            // but we have to use that syntax to use ObjectExpression with lambdas
+            // but, we have to use that syntax to use ObjectExpression with lambdas
             // so, we unwrap groups if they contain only one ObjectExpression
-            const gexp = exp as GroupExpression;
-            if (gexp.expressions.length === 1 && gexp.expressions[0].type === ExpressionType.Object) {
-                return expToStr(gexp.expressions[0], scopes, parameters);
-            }
-
-            return groupToStr(gexp, scopes, parameters);
+            const groupExp = exp as GroupExpression;
+            return groupExp.expressions.length === 1 && groupExp.expressions[0].type === ExpressionType.Object
+                ? expToStr(groupExp.expressions[0], scopes, parameters)
+                : groupToStr(groupExp, scopes, parameters);
         case ExpressionType.Object:
             return objectToStr(exp as ObjectExpression, scopes, parameters);
         case ExpressionType.Binary:
@@ -293,11 +288,11 @@ function  expToStr(exp: Expression, scopes: any[], parameters: string[]): string
     }
 }
 
-function  literalToStr(exp: LiteralExpression) {
+function literalToStr(exp: LiteralExpression) {
     return valueToStr(exp.value);
 }
 
-function  variableToStr(exp: VariableExpression, scopes: any[], parameters: string[]) {
+function variableToStr(exp: VariableExpression, scopes: any[], parameters: string[]) {
     const name = exp.name;
     if (parameters.indexOf(name) !== -1) {
         return "";
@@ -307,22 +302,22 @@ function  variableToStr(exp: VariableExpression, scopes: any[], parameters: stri
     return (scope && valueToStr(scope[name])) || name;
 }
 
-function  unaryToStr(exp: UnaryExpression, scopes: any[], parameters: string[]) {
+function unaryToStr(exp: UnaryExpression, scopes: any[], parameters: string[]) {
     return `${getUnaryOp(exp.operator)}${expToStr(exp.target, scopes, parameters)}`;
 }
 
-function  groupToStr(exp: GroupExpression, scopes: any[], parameters: string[]) {
+function groupToStr(exp: GroupExpression, scopes: any[], parameters: string[]) {
     return `(${exp.expressions.map(e => expToStr(e, scopes, parameters)).join(",")})`;
 }
 
-function  objectToStr(exp: ObjectExpression, scopes: any[], parameters: string[]) {
+function objectToStr(exp: ObjectExpression, scopes: any[], parameters: string[]) {
     return exp.members.map(m => {
         const e = expToStr(m.right, scopes, parameters);
         return e === m.name ? e : `${e} as ${m.name}`;
     }).join(",");
 }
 
-function  binaryToStr(exp: BinaryExpression, scopes: any[], parameters: string[]) {
+function binaryToStr(exp: BinaryExpression, scopes: any[], parameters: string[]) {
     const left = expToStr(exp.left, scopes, parameters);
     const op = getBinaryOp(exp.operator);
     const right = expToStr(exp.right, scopes, parameters);
@@ -330,7 +325,7 @@ function  binaryToStr(exp: BinaryExpression, scopes: any[], parameters: string[]
     return `${left} ${op} ${right}`;
 }
 
-function  memberToStr(exp: MemberExpression, scopes: any[], parameters: string[]) {
+function memberToStr(exp: MemberExpression, scopes: any[], parameters: string[]) {
     const owner = expToStr(exp.owner, scopes, parameters);
 
     if (!owner) {
@@ -348,7 +343,7 @@ function  memberToStr(exp: MemberExpression, scopes: any[], parameters: string[]
     return `${owner}/${exp.name}`;
 }
 
-function  funcToStr(exp: FuncExpression, scopes: any[], parameters: string[]) {
+function funcToStr(exp: FuncExpression, scopes: any[], parameters: string[]) {
     const rl = rootLambda;
     rootLambda = false;
     const prm = rl ? "" : (exp.parameters.join(",") + ": ");
@@ -356,7 +351,7 @@ function  funcToStr(exp: FuncExpression, scopes: any[], parameters: string[]) {
     return prm + body;
 }
 
-function  callToStr(exp: CallExpression, scopes: any[], parameters: string[]) {
+function callToStr(exp: CallExpression, scopes: any[], parameters: string[]) {
     const callee = exp.callee as MemberExpression;
     if (callee.type !== ExpressionType.Member) {
         if (callee.type === ExpressionType.Variable) {
@@ -401,7 +396,7 @@ function  callToStr(exp: CallExpression, scopes: any[], parameters: string[]) {
     return `${oDataFunc}(${args})`;
 }
 
-function  arrayToStr(exp: ArrayExpression, scopes: any[], parameters: string[]) {
+function arrayToStr(exp: ArrayExpression, scopes: any[], parameters: string[]) {
     // exclude nulls
     return exp.items.reduce((result, m) => {
         if (m) {
@@ -411,7 +406,7 @@ function  arrayToStr(exp: ArrayExpression, scopes: any[], parameters: string[]) 
     }, []).join(",");
 }
 
-function  valueToStr(value) {
+function valueToStr(value: any) {
     if (Object.prototype.toString.call(value) === "[object Date]") {
         return `${value.toISOString()}`;
     }
@@ -484,10 +479,6 @@ function getBinaryOp(op: string) {
     }
 }
 
-function getUnaryOp(op) {
-    if (op === "!") {
-        return "not ";
-    }
-
-    return op;
+function getUnaryOp(op: string) {
+    return op === "!" ? "not " : op;
 }

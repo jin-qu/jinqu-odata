@@ -21,5 +21,5 @@ export function oDataResource(resource: string) {
 
 export function getResource(type: Ctor<any>) {
     const existing = metadata.find((m, _) => m.type === type);
-    return (existing && existing.resource) || null;
+    return (existing && existing.resource) || null;
 }

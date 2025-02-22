@@ -1,11 +1,12 @@
-import { plainToClass } from "class-transformer";
-import { AjaxOptions, IQueryPart, IQueryProvider, IRequestProvider } from "jinqu";
+import { plainToInstance } from "class-transformer";
+import { AjaxOptions, IQueryPart, IQueryProvider } from "jinqu";
 import { ODataQuery } from "./odata-query";
 import { handleParts } from "./shared";
+import { IRequestProvider } from "./request-provider";
 
 export class ODataQueryProvider<TOptions extends AjaxOptions, TResponse> implements IQueryProvider {
 
-    constructor(protected requestProvider: IRequestProvider<AjaxOptions>) {
+    constructor(protected requestProvider: IRequestProvider<TOptions>) {
     }
 
     public get updateMethod(): "PATCH" | "PUT" {
@@ -16,25 +17,22 @@ export class ODataQueryProvider<TOptions extends AjaxOptions, TResponse> impleme
         return new ODataQuery<T, TOptions, TResponse>(this, parts);
     }
 
-    public execute<T = any, TResult = PromiseLike<T[]>>(parts: IQueryPart[]): TResult {
+    public execute<T = any, TResult = PromiseLike<T[]>>(_parts: IQueryPart[]): TResult {
         throw new Error("Synchronous execution is not supported");
     }
 
     public executeAsync<T = any, TResult = T[]>(parts: IQueryPart[]): PromiseLike<TResult> {
-        const [queryParams, options, ctor] = handleParts(parts);
+        const [queryParams, options, ctor] = handleParts<TOptions>(parts);
         const promise = this.requestProvider.request<TResult>(queryParams, options);
         if (ctor) {
             return promise.then((d: any) => {
                 if ((d.inlineCount !== void 0 || d.response) && d.value !== void 0) {
-                    d.value = plainToClass(ctor, d.value);
+                    d.value = plainToInstance(ctor, d.value);
                     return d;
-                } else {
-                    return plainToClass(ctor, d);
-                }
+                } else
+                    return plainToInstance(ctor, d);
             })
-        } else {
+        } else
             return promise;
-        }
     }
 }
-

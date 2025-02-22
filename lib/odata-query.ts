@@ -6,8 +6,7 @@ import {
 import { InlineCountInfo } from "jinqu";
 import { handleParts, ODataFuncs } from "./shared";
 
-export type SingleKey = string | number | bigint | boolean | null;// | Date;
-//export type CompositeKey<T> = { [K in keyof T]?: T[K] extends object ? never : T[K] };
+export type SingleKey = string | number | bigint | boolean | null;
 export type CompositeKey<T> = { [P in
     ({ [K in keyof T]: T[K] extends object ? never : K }[keyof T])
 ]?: T[P] };
@@ -26,7 +25,7 @@ export class ODataQuery<
     }
 
     public setParameter(key: string, value: any): ODataQuery<T, TOptions, TResponse, TExtra> {
-        return this.withOptions({ params: [{ key, value }] });
+        return this.withOptions({ $params: [{ key, value }] });
     }
 
     public includeResponse(): ODataQuery<T, TOptions, TResponse, TExtra & AjaxResponse<TResponse>> {
@@ -47,7 +46,7 @@ export class ODataQuery<
     public action(name: string): IODataQuery<T, TExtra> {
         const part1 = new QueryPart(ODataFuncs.action, [PartArgument.literal(name)]);
         const options: AjaxOptions = {
-            method: "POST"
+            $method: "POST"
         };
         const part2 = new QueryPart(AjaxFuncs.options, [PartArgument.literal(options)]);
         return this.create(part1, part2);
@@ -58,8 +57,7 @@ export class ODataQuery<
         return this.createFunctionQuery(part);
     }
 
-    public navigateTo<TNav extends object>(keySelector: Func1<T, TNav>, ...scopes): IODataQuery<AU<TNav>, TExtra> {
-        //return this.createNavigatedQuery<AU<TNav>>(QueryPart.select(keySelector, scopes));
+    public navigateTo<TNav extends object>(keySelector: Func1<T, TNav>, ...scopes: any[]): IODataQuery<AU<TNav>, TExtra> {
         const part = new QueryPart(ODataFuncs.navigateTo, [PartArgument.identifier(keySelector, scopes)]);
         return this.createNavigatedQuery<AU<TNav>>(part);
     }
@@ -68,29 +66,28 @@ export class ODataQuery<
         return this.create(QueryPart.inlineCount());
     }
 
-    public where(predicate: Predicate<T>, ...scopes): IODataQuery<T, TExtra> {
+    public where(predicate: Predicate<T>, ...scopes: any[]): IODataQuery<T, TExtra> {
         const part = new QueryPart(ODataFuncs.filter, [PartArgument.identifier(predicate, scopes)]);
         return this.create(part);
     }
 
-    public orderBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T, TExtra> {
+    public orderBy(keySelector: Func1<T>, ...scopes: any[]): IOrderedODataQuery<T, TExtra> {
         return this.createOrderedQuery(QueryPart.orderBy(keySelector, scopes));
     }
 
-    public orderByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T, TExtra> {
+    public orderByDescending(keySelector: Func1<T>, ...scopes: any[]): IOrderedODataQuery<T, TExtra> {
         return this.createOrderedQuery(QueryPart.orderByDescending(keySelector, scopes));
     }
 
     public expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, selector?: K2[])
         : IExpandedODataQuery<T, AU<T[K1]>, TExtra>;
-    public expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, filter: Predicate<AU<T[K1]>>, ...scopes)
+    public expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, filter: Predicate<AU<T[K1]>>, ...scopes: any[])
         : IExpandedODataQuery<T, AU<T[K1]>, TExtra>;
     public expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(
-        // tslint:disable-next-line:unified-signatures
-        nav: K1, selector: K2[], filter: Predicate<AU<T[K1]>>, ...scopes)
+        nav: K1, selector: K2[], filter: Predicate<AU<T[K1]>>, ...scopes: any[])
         : IExpandedODataQuery<T, AU<T[K1]>, TExtra>;
     public expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(
-        nav: K1, prm1?: K2[] | Predicate<AU<T[K1]>>, prm2?: Predicate<AU<T[K1]>>, ...scopes)
+        nav: K1, prm1?: K2[] | Predicate<AU<T[K1]>>, prm2?: Predicate<AU<T[K1]>>, ...scopes: any[])
             : IExpandedODataQuery<T, AU<T[K1]>, TExtra> {
         const args = createExpandArgs(nav, prm1, prm2, ...scopes);
         return this.createExpandedQuery<AU<T[K1]>>(new QueryPart(ODataFuncs.expand, args));
@@ -123,7 +120,7 @@ export class ODataQuery<
         return this.provider.executeAsync([...this.parts, part]) as any;
     }
 
-    public count(predicate?: Predicate<T>, ...scopes): PromiseLike<Result<number, TExtra>> {
+    public count(predicate?: Predicate<T>, ...scopes: any[]): PromiseLike<Result<number, TExtra>> {
         return this.provider.executeAsync([...this.parts, QueryPart.count(predicate, scopes)]);
     }
 
@@ -168,22 +165,21 @@ export class ODataQuery<
     }
 
     public insertAsync(returnInserted?: boolean): PromiseLike<Result<T, TExtra>> {
-        const options: AjaxOptions = { method: "POST" };
-        //if (returnInserted) {
-        //    options.headers = {
-        //        "prefer": "return=representation"
-        //    };
-        //}
+        const options: AjaxOptions = { $method: "POST" };
+        if (returnInserted) {
+           options.$headers = options.$headers || {};
+           options.$headers.prefer = "return=representation";
+        }
         const part = new QueryPart(AjaxFuncs.options, [PartArgument.literal(options)]);
         return (this.provider as any).executeAsync([part, ...this.parts]);
     }
 
     public updateAsync(returnUpdated?: boolean): PromiseLike<Result<T, TExtra>> {
-        const options: AjaxOptions = { method: (this.provider as any).updateMethod };
+        // todo: move
+        const options: AjaxOptions = { $method: (this.provider as any).updateMethod };
         if (returnUpdated) {
-            options.headers = {
-                "prefer": "return=representation"
-            };
+            options.$headers = options.$headers || {};
+            options.$headers.prefer = "return=representation";
         }
         const part = new QueryPart(AjaxFuncs.options, [PartArgument.literal(options)]);
         return (this.provider as any).executeAsync([part, ...this.parts]);
@@ -191,7 +187,7 @@ export class ODataQuery<
 
     public deleteAsync(): PromiseLike<Result<void, TExtra>> {
         const options: AjaxOptions = {
-            method: "DELETE"
+            $method: "DELETE"
         };
         const part = new QueryPart(AjaxFuncs.options, [PartArgument.literal(options)]);
         return (this.provider as any).executeAsync([part, ...this.parts]);
@@ -202,20 +198,18 @@ export class ODataQuery<
     }
 }
 
-// tslint:disable-next-line:max-classes-per-file
 class OrderedODataQuery<T extends object, TOptions extends AjaxOptions = AjaxOptions, TResponse = any, TExtra = {}>
     extends ODataQuery<T, TOptions, TResponse, TExtra> implements IOrderedODataQuery<T, TExtra> {
 
-    public thenBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T, TExtra> {
+    public thenBy(keySelector: Func1<T>, ...scopes: any[]): IOrderedODataQuery<T, TExtra> {
         return this.createOrderedQuery(QueryPart.thenBy(keySelector, scopes));
     }
 
-    public thenByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T, TExtra> {
+    public thenByDescending(keySelector: Func1<T>, ...scopes: any[]): IOrderedODataQuery<T, TExtra> {
         return this.createOrderedQuery(QueryPart.thenByDescending(keySelector, scopes));
     }
 }
 
-// tslint:disable-next-line:max-classes-per-file
 class ExpandedODataQuery<
     TEntity extends object, TProperty,
     TOptions extends AjaxOptions = AjaxOptions,
@@ -226,20 +220,19 @@ class ExpandedODataQuery<
     public thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(nav: K1, selector?: K2[])
         : IExpandedODataQuery<TEntity, AU<TProperty[K1]>, TExtra>;
     public thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(
-        nav: K1, filter: Predicate<AU<TProperty[K1]>>, ...scopes)
+        nav: K1, filter: Predicate<AU<TProperty[K1]>>, ...scopes: any[])
         : IExpandedODataQuery<TEntity, AU<TProperty[K1]>, TExtra>;
     public thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(
-        nav: K1, selector: K2[], filter: Predicate<AU<TProperty[K1]>>, ...scopes)
+        nav: K1, selector: K2[], filter: Predicate<AU<TProperty[K1]>>, ...scopes: any[])
         : IExpandedODataQuery<TEntity, AU<TProperty[K1]>, TExtra>;
     public thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(
-        nav: K1, prm1?: K2[] | Predicate<AU<TProperty[K1]>>, prm2?: Predicate<AU<TProperty[K1]>>, ...scopes)
+        nav: K1, prm1?: K2[] | Predicate<AU<TProperty[K1]>>, prm2?: Predicate<AU<TProperty[K1]>>, ...scopes: any[])
         : IExpandedODataQuery<TEntity, AU<TProperty[K1]>, TExtra> {
         const args = createExpandArgs(nav, prm1, prm2, ...scopes);
         return this.createExpandedQuery<any>(new QueryPart(ODataFuncs.thenExpand, args));
     }
 }
 
-// tslint:disable-next-line:max-classes-per-file
 class FunctionODataQuery<T extends object, TOptions extends AjaxOptions = AjaxOptions, TResponse = any, TExtra = {}>
     extends ODataQuery<T, TOptions, TResponse, TExtra> implements IFunctionODataQuery<T, TExtra> {
 
@@ -252,17 +245,17 @@ export interface IODataQuery<T, TExtra = {}> extends IQueryBase {
     byKey(key: SingleKey | CompositeKey<T>): IODataQuery<T, TExtra>;
     action(name: string): IODataQuery<T, TExtra>;
     function(name: string): IFunctionODataQuery<T, TExtra>;
-    navigateTo<TNav extends object>(keySelector: Func1<T, TNav>, ...scopes): IODataQuery<AU<TNav>, TExtra>;
+    navigateTo<TNav extends object>(keySelector: Func1<T, TNav>, ...scopes: any[]): IODataQuery<AU<TNav>, TExtra>;
     inlineCount(value?: boolean): IODataQuery<T, TExtra & InlineCountInfo>;
-    where(predicate: Predicate<T>, ...scopes): IODataQuery<T, TExtra>;
-    orderBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T, TExtra>;
-    orderByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T, TExtra>;
+    where(predicate: Predicate<T>, ...scopes: any[]): IODataQuery<T, TExtra>;
+    orderBy(keySelector: Func1<T>, ...scopes: any[]): IOrderedODataQuery<T, TExtra>;
+    orderByDescending(keySelector: Func1<T>, ...scopes: any[]): IOrderedODataQuery<T, TExtra>;
     expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, selector?: K2[])
         : IExpandedODataQuery<T, AU<T[K1]>, TExtra>;
-    expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, filter: Predicate<AU<T[K1]>>, ...scopes)
+    expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, filter: Predicate<AU<T[K1]>>, ...scopes: any[])
         : IExpandedODataQuery<T, AU<T[K1]>, TExtra>;
     expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(
-        nav: K1, selector: K2[], filter: Predicate<AU<T[K1]>>, ...scopes)
+        nav: K1, selector: K2[], filter: Predicate<AU<T[K1]>>, ...scopes: any[])
         : IExpandedODataQuery<T, AU<T[K1]>, TExtra>;
     skip(count: number): IODataQuery<T, TExtra>;
     take(count: number): IODataQuery<T, TExtra>;
@@ -272,7 +265,7 @@ export interface IODataQuery<T, TExtra = {}> extends IQueryBase {
     groupBy<TKey extends object, TResult extends object>(
         keySelector: Func1<T, TKey>, elementSelector?: Func1<T[] & TKey, TResult>, ...scopes: any[])
         : PromiseLike<Result<TResult[], TExtra>>;
-    count(predicate?: Predicate<T>, ...scopes): PromiseLike<Result<number, TExtra>>;
+    count(predicate?: Predicate<T>, ...scopes: any[]): PromiseLike<Result<number, TExtra>>;
     setData(value: any): IODataQuery<T, TExtra>;
     toArrayAsync(ctor?: Ctor<T>): PromiseLike<Result<T[], TExtra>>;
     singleAsync(ctor?: Ctor<T>): PromiseLike<Result<T, TExtra>>;
@@ -284,18 +277,18 @@ export interface IODataQuery<T, TExtra = {}> extends IQueryBase {
 }
 
 export interface IOrderedODataQuery<T, TExtra = {}> extends IODataQuery<T, TExtra> {
-    thenBy(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T, TExtra>;
-    thenByDescending(keySelector: Func1<T>, ...scopes): IOrderedODataQuery<T, TExtra>;
+    thenBy(keySelector: Func1<T>, ...scopes: any[]): IOrderedODataQuery<T, TExtra>;
+    thenByDescending(keySelector: Func1<T>, ...scopes: any[]): IOrderedODataQuery<T, TExtra>;
 }
 
 export interface IExpandedODataQuery<TEntity, TProperty, TExtra = {}> extends IODataQuery<TEntity, TExtra> {
     thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(nav: K1, selector?: K2[])
         : IExpandedODataQuery<TEntity, AU<TProperty[K1]>, TExtra>;
     thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(
-        nav: K1, filter: Predicate<AU<TProperty[K1]>>, ...scopes)
+        nav: K1, filter: Predicate<AU<TProperty[K1]>>, ...scopes: any[])
         : IExpandedODataQuery<TEntity, AU<TProperty[K1]>, TExtra>;
     thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(
-        nav: K1, selector: K2[], filter: Predicate<AU<TProperty[K1]>>, ...scopes)
+        nav: K1, selector: K2[], filter: Predicate<AU<TProperty[K1]>>, ...scopes: any[])
         : IExpandedODataQuery<TEntity, AU<TProperty[K1]>, TExtra>;
 }
 
@@ -303,16 +296,15 @@ export interface IFunctionODataQuery<T, TExtra = {}> extends IODataQuery<T, TExt
     withParameters(params: any): IODataQuery<T, TExtra>;
 }
 
-// eXclude undefined
+// exclude undefined
 type XU<T> = T extends undefined ? never : T;
 
 // Array un-wrapper
-//type AU<T> = T extends any[] ? T[0] : T;
 type AU<T> = XU<T extends any[] ? T[0] : T>;
 
-function createExpandArgs(nav: any, prm1?: any, prm2?: any, ...scopes) {
-    let selector;
-    let filter;
+function createExpandArgs(nav: any, prm1?: any, prm2?: any, ...scopes: any[]) {
+    let selector: any;
+    let filter: any;
     if (typeof prm1 !== "function" && typeof prm1 !== "string") {
         selector = prm1;
         filter = prm2;

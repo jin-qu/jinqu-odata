@@ -1,13 +1,13 @@
 import {
-    AjaxFuncs, AjaxOptions, Ctor,
-    IAjaxProvider, IRequestProvider, mergeAjaxOptions,
-    QueryFunc, QueryParameter, Result,
+    AjaxFuncs, AjaxOptions, Ctor, IAjaxProvider,
+    mergeAjaxOptions, QueryFunc, QueryParameter, Result,
 } from "jinqu";
 import { FetchProvider } from "jinqu-fetch";
 import { getResource } from "./decorators";
 import { ODataQuery } from "./odata-query";
 import { ODataQueryProvider } from "./odata-query-provider";
 import { ODataFuncs } from "./shared";
+import { IRequestProvider } from "./request-provider";
 
 export interface IAjaxInterceptor {
     intercept(options: AjaxOptions): AjaxOptions;
@@ -20,11 +20,8 @@ export interface IODataServiceOptions<TResponse> {
     ajaxInterceptor?: IAjaxInterceptor;
 }
 
-export class ODataService<TResponse = Response>
-    implements IRequestProvider<AjaxOptions>  {
-
+export class ODataService<TOptions = AjaxOptions | RequestInit, TResponse = Response> implements IRequestProvider<TOptions>  {
     public static readonly defaultAjaxOptions: AjaxOptions = {};
-
     public options: IODataServiceOptions<TResponse>;
 
     constructor(baseAddress?: string | null, ajaxProvider?: IAjaxProvider<TResponse>);
@@ -50,10 +47,10 @@ export class ODataService<TResponse = Response>
         const d = Object.assign({}, ODataService.defaultAjaxOptions);
         let o = (options || []).reduce(mergeAjaxOptions, d);
         if (this.options.baseAddress) {
-            if (this.options.baseAddress[this.options.baseAddress.length - 1] !== "/" && o.url && o.url[0] !== "/") {
-                o.url = "/" + o.url;
+            if (this.options.baseAddress[this.options.baseAddress.length - 1] !== "/" && o.$url && o.$url[0] !== "/") {
+                o.$url = "/" + o.$url;
             }
-            o.url = this.options.baseAddress + (o.url || "");
+            o.$url = this.options.baseAddress + (o.$url || "");
         }
 
         let includeResponse = false;
@@ -63,7 +60,7 @@ export class ODataService<TResponse = Response>
         let funcPrm: QueryParameter = null;
         let funcParamsPrm: QueryParameter = null;
         let navigateToPrm: QueryParameter = null;
-        o.params = o.params || [];
+        o.$params = o.$params || [];
         params = params || [];
         let inlineCountEnabled = false;
         params.forEach(p => {
@@ -78,40 +75,40 @@ export class ODataService<TResponse = Response>
             } else if (p.key === ODataFuncs.funcParams) {
                 funcParamsPrm = p;
             } else if (p.key === QueryFunc.inlineCount) {
-                o.params.push({ key: "$count", value: "true" });
+                o.$params.push({ key: "$count", value: "true" });
                 inlineCountEnabled = true;
             } else if (p.key === "$count") {
                 countPrm = p;
             } else if (p.key === AjaxFuncs.includeResponse) {
                 includeResponse = true;
             } else {
-                o.params.push(p);
+                o.$params.push(p);
             }
         });
 
         if (keyPrm) {
-            o.url += `(${keyPrm.value})`;
+            o.$url += `(${keyPrm.value})`;
         }
 
         if (navigateToPrm) {
-            o.url += `/${navigateToPrm.value}`;
+            o.$url += `/${navigateToPrm.value}`;
         }
 
         if (actPrm) {
-            o.url += `/${actPrm.value}`;
+            o.$url += `/${actPrm.value}`;
         } else if (funcPrm) {
-            o.url += `/${funcPrm.value}` + (funcParamsPrm ? `(${funcParamsPrm.value})` : "()");
+            o.$url += `/${funcPrm.value}` + (funcParamsPrm ? `(${funcParamsPrm.value})` : "()");
         }
 
-        if (o.params.length) {
-            o.url += "?" + o.params.map(p => `${p.key}=${encodeURIComponent(p.value)}`).join("&");
+        if (o.$params.length) {
+            o.$url += "?" + o.$params.map(p => `${p.key}=${encodeURIComponent(p.value)}`).join("&");
         }
-        o.params = [];
+        o.$params = [];
 
         if (countPrm) {
-            o.url += "/$count";
+            o.$url += "/$count";
             if (countPrm.value) {
-                o.url += `/?$filter=${encodeURIComponent(countPrm.value)}`;
+                o.$url += `/?$filter=${encodeURIComponent(countPrm.value)}`;
             }
         }
 
@@ -122,15 +119,12 @@ export class ODataService<TResponse = Response>
         return this.options.ajaxProvider.ajax(o)
             .then((r) => {
                 let value = r.value as any;
-                if (value) {
-                    if (value.value !== void 0) {
-                        value = value.value;
-                    }
+                if (value && value.value !== void 0) {
+                    value = value.value;
                 }
 
-                if (!inlineCountEnabled && !includeResponse) {
+                if (!inlineCountEnabled && !includeResponse)
                     return value;
-                }
 
                 return {
                     inlineCount: inlineCountEnabled ? Number(r.value && r.value["@odata.count"]) : void 0,
@@ -148,13 +142,13 @@ export class ODataService<TResponse = Response>
             ctor = resource;
             resource = getResource(ctor as any);
             if (!resource) {
-                const r = /class (.*?)\s|\{|function (.*?)[\s|\(]/.exec(ctor.toString());
+                const r = /class (.*?)\s|\{|function (.*?)[\s|(]/.exec(ctor.toString());
                 resource = r[1] || r[2];
             }
         }
         const query = new ODataQueryProvider<AjaxOptions, TResponse>(this)
             .createQuery<T>()
-            .withOptions({ url: resource });
+            .withOptions({ $url: resource });
         return ctor ? query.cast(ctor) as any : query;
     }
 }

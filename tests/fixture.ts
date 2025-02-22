@@ -1,5 +1,3 @@
-/* tslint:disable:max-classes-per-file */
-
 import { AjaxOptions, AjaxResponse, IAjaxProvider, Value } from "jinqu";
 import { oDataResource, ODataService } from "../index";
 
@@ -21,7 +19,6 @@ export class Country implements ICountry {
     public name: string;
 }
 
-// tslint:disable-next-line:no-empty-interface
 export interface ICountry extends Country { }
 
 export class City {
@@ -47,7 +44,6 @@ export class Company implements ICompany {
     public address?: Address;
 }
 
-// tslint:disable-next-line:no-empty-interface
 export interface ICompany extends Company { }
 
 export class CompanyService extends ODataService {

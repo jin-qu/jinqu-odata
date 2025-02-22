@@ -1,12 +1,15 @@
 # jinqu-odata - Javascript-Linq to Odata
 
-[![Build Status](https://travis-ci.org/jin-qu/jinqu-odata.svg?branch=master)](https://travis-ci.org/jin-qu/jinqu-odata)
-[![Coverage Status](https://coveralls.io/repos/github/jin-qu/jinqu-odata/badge.svg?branch=master)](https://coveralls.io/github/jin-qu/jinqu-odata?branch=master)
-[![npm version](https://badge.fury.io/js/jinqu-odata.svg)](https://badge.fury.io/js/jinqu-odata)
+[![Build and Test](https://github.com/jin-qu/jinqu-odata/actions/workflows/build.yml/badge.svg)](https://github.com/jin-qu/jinqu-odata/actions/workflows/build.yml)
+[![codecov](https://codecov.io/gh/jin-qu/jinqu-odata/graph/badge.svg?token=Mqp29YJENK)](https://codecov.io/gh/jin-qu/jinqu-odata)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/57901c8caa8848a596b2274f5700f0c6)](https://app.codacy.com/gh/jin-qu/jinqu-odata/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 <a href="https://snyk.io/test/npm/jinqu-odata"><img src="https://snyk.io/test/npm/jinqu-odata/badge.svg" alt="Known Vulnerabilities" data-canonical-src="https://snyk.io/test/npm/jinqu-odata" style="max-width:100%;"></a>
-[![GitHub issues](https://img.shields.io/github/issues/jin-qu/jinqu-odata.svg)](https://github.com/jin-qu/jinqu-odata/issues)
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/jin-qu/jinqu-odata/master/LICENSE)
 
+[![npm version](https://img.shields.io/npm/v/jinqu-odata)](https://www.npmjs.com/package/jinqu-odata)
+[![npm downloads](https://img.shields.io/npm/dm/jinqu-odata.svg)](https://www.npmjs.com/package/jinqu-odata)
+
+[![GitHub issues](https://img.shields.io/github/issues/jin-qu/jinqu-odata.svg)](https://github.com/jin-qu/jinqu-odata/issues)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/jin-qu/jinqu-odata/main/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/jin-qu/jinqu-odata.svg?style=social&label=Star)](https://github.com/jin-qu/jinqu-odata)
 [![GitHub forks](https://img.shields.io/github/forks/jin-qu/jinqu-odata.svg?style=social&label=Fork)](https://github.com/jin-qu/jinqu-odata)
 
