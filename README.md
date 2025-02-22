@@ -246,16 +246,16 @@ const books = await service
 
 For efficiency, we can **filter by rows** an `expand`/`thenExpand` query by providing a predicate:
 
-```typescript
+```
 .thenExpand("Author") // no filter
-.thenExpand("Author", a => a.endsWith ("Albahari")) // filtered
+.thenExpand("Author", a => a.endsWith("Albahari")) // filtered
 
 // books?$expand=AuthorBooks($expand=Author($filter=endswith(Name,'Albahari')))
 ```
 
 Similarly, for efficiency, we can **filter by columns** an `expand`/`thenExpand` query by providing an array of column names:
 
-```typescript
+```
 .thenExpand("Author") // no filter
 .thenExpand("Author", ["Name"]) // filtered columns
 
