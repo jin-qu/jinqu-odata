@@ -15,7 +15,7 @@ export type CompositeKey<T> = { [P in
 export class ODataQuery<
     T extends object,
     TOptions extends ODataOptions = ODataOptions,
-    TResponse = any, TExtra = {}>
+    TResponse = any, TExtra = object>
     implements IODataQuery<T, TOptions, TResponse, TExtra> {
 
     constructor(public readonly provider: IQueryProvider, public readonly parts: IQueryPart[] = []) {
@@ -82,11 +82,14 @@ export class ODataQuery<
 
     public expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, selector?: K2[])
         : IExpandedODataQuery<T, AU<T[K1]>, TOptions, TResponse, TExtra>;
+    // eslint-disable-next-line no-dupe-class-members, @typescript-eslint/no-unused-vars
     public expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, filter: Predicate<AU<T[K1]>>, ...scopes: unknown[])
         : IExpandedODataQuery<T, AU<T[K1]>, TOptions, TResponse, TExtra>;
+    // eslint-disable-next-line no-dupe-class-members
     public expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(
         nav: K1, selector: K2[], filter: Predicate<AU<T[K1]>>, ...scopes: unknown[])
         : IExpandedODataQuery<T, AU<T[K1]>, TOptions, TResponse, TExtra>;
+    // eslint-disable-next-line no-dupe-class-members
     public expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(
         nav: K1, prm1?: K2[] | Predicate<AU<T[K1]>>, prm2?: Predicate<AU<T[K1]>>, ...scopes: unknown[])
             : IExpandedODataQuery<T, AU<T[K1]>, TOptions, TResponse, TExtra> {
@@ -182,12 +185,12 @@ export class ODataQuery<
         return this.provider.executeAsync([...this.parts, part]);
     }
 
-    public executeAsync<TResult extends any = void>(): PromiseLike<Result<TResult, TExtra>> {
+    public executeAsync<TResult = void>(): PromiseLike<Result<TResult, TExtra>> {
         return this.provider.executeAsync(this.parts);
     }
 }
 
-class OrderedODataQuery<T extends object, TOptions extends ODataOptions = ODataOptions, TResponse = any, TExtra = {}>
+class OrderedODataQuery<T extends object, TOptions extends ODataOptions = ODataOptions, TResponse = any, TExtra = object>
     extends ODataQuery<T, TOptions, TResponse, TExtra> implements IOrderedODataQuery<T, TOptions, TResponse, TExtra> {
 
     public thenBy(keySelector: Func1<T>, ...scopes: any[]): IOrderedODataQuery<T, TOptions, TResponse, TExtra> {
@@ -202,18 +205,21 @@ class OrderedODataQuery<T extends object, TOptions extends ODataOptions = ODataO
 class ExpandedODataQuery<
     TEntity extends object, TProperty,
     TOptions extends ODataOptions = ODataOptions,
-    TResponse = any, TExtra = {}>
+    TResponse = any, TExtra = object>
     extends ODataQuery<TEntity, TOptions, TResponse, TExtra>
     implements IExpandedODataQuery<TEntity, TProperty, TOptions, TResponse, TExtra> {
 
     public thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(nav: K1, selector?: K2[])
         : IExpandedODataQuery<TEntity, AU<TProperty[K1]>, TOptions, TResponse, TExtra>;
+    // eslint-disable-next-line no-dupe-class-members, @typescript-eslint/no-unused-vars
     public thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(
         nav: K1, filter: Predicate<AU<TProperty[K1]>>, ...scopes: any[])
         : IExpandedODataQuery<TEntity, AU<TProperty[K1]>, TOptions, TResponse, TExtra>;
+    // eslint-disable-next-line no-dupe-class-members
     public thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(
         nav: K1, selector: K2[], filter: Predicate<AU<TProperty[K1]>>, ...scopes: any[])
         : IExpandedODataQuery<TEntity, AU<TProperty[K1]>, TOptions, TResponse, TExtra>;
+    // eslint-disable-next-line no-dupe-class-members
     public thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(
         nav: K1, prm1?: K2[] | Predicate<AU<TProperty[K1]>>, prm2?: Predicate<AU<TProperty[K1]>>, ...scopes: any[])
         : IExpandedODataQuery<TEntity, AU<TProperty[K1]>, TOptions, TResponse, TExtra> {
@@ -222,7 +228,7 @@ class ExpandedODataQuery<
     }
 }
 
-class FunctionODataQuery<T extends object, TOptions extends ODataOptions = ODataOptions, TResponse = any, TExtra = {}>
+class FunctionODataQuery<T extends object, TOptions extends ODataOptions = ODataOptions, TResponse = any, TExtra = object>
     extends ODataQuery<T, TOptions, TResponse, TExtra> implements IFunctionODataQuery<T, TOptions, TResponse, TExtra> {
 
     public withParameters(params: object | boolean | number | string | bigint) {
@@ -241,6 +247,7 @@ export interface IODataQuery<T, TOptions extends ODataOptions, TResponse, TExtra
     orderByDescending(keySelector: Func1<T>, ...scopes: any[]): IOrderedODataQuery<T, TOptions, TResponse, TExtra>;
     expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, selector?: K2[])
         : IExpandedODataQuery<T, AU<T[K1]>, TOptions, TResponse, TExtra>;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(nav: K1, filter: Predicate<AU<T[K1]>>, ...scopes: any[])
         : IExpandedODataQuery<T, AU<T[K1]>, TOptions, TResponse, TExtra>;
     expand<K1 extends keyof T, K2 extends keyof AU<T[K1]>>(
@@ -262,7 +269,7 @@ export interface IODataQuery<T, TOptions extends ODataOptions, TResponse, TExtra
     insertAsync(returnInserted?: boolean): PromiseLike<Result<T, TExtra>>;
     updateAsync(returnUpdated?: boolean): PromiseLike<Result<T, TExtra>>;
     deleteAsync(): PromiseLike<Result<void, TExtra>>;
-    executeAsync<TResult extends any = void>(): PromiseLike<Result<TResult, TExtra>>;
+    executeAsync<TResult = void>(): PromiseLike<Result<TResult, TExtra>>;
 }
 
 export interface IOrderedODataQuery<T, TOptions extends ODataOptions, TResponse, TExtra> extends IODataQuery<T, TOptions, TResponse, TExtra> {
@@ -274,6 +281,7 @@ export interface IExpandedODataQuery<TEntity, TProperty, TOptions extends ODataO
     extends IODataQuery<TEntity, TOptions, TResponse, TExtra> {
     thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(nav: K1, selector?: K2[])
         : IExpandedODataQuery<TEntity, AU<TProperty[K1]>, TOptions, TResponse, TExtra>;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     thenExpand<K1 extends keyof TProperty, K2 extends keyof AU<TProperty[K1]>>(
         nav: K1, filter: Predicate<AU<TProperty[K1]>>, ...scopes: any[])
         : IExpandedODataQuery<TEntity, AU<TProperty[K1]>, TOptions, TResponse, TExtra>;

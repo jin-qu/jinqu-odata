@@ -30,7 +30,9 @@ export class ODataService<TOptions extends ODataOptions = ODataOptions & Request
     }
 
     public createQuery<T extends object>(resource: string | Ctor<T>): ODataQuery<T, TOptions, TResponse>;
+    // eslint-disable-next-line no-dupe-class-members
     public createQuery<T extends object>(resource: string, ctor: Ctor<T>): ODataQuery<T, TOptions, TResponse>;
+    // eslint-disable-next-line no-dupe-class-members
     public createQuery<T extends object>(resource: string | Ctor<T>, ctor?: Ctor<T>): ODataQuery<T, TOptions, TResponse> {
         if (typeof resource === "function") {
             ctor = resource;

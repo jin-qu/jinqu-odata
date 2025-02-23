@@ -93,6 +93,7 @@ export function handleParts<TOptions extends ODataOptions>(parts: IQueryPart[]):
         } else if (part.type === QueryFunc.toArray
             || part.type === QueryFunc.first
             || part.type === QueryFunc.single) {
+            // ignored
         } else if (part.type === QueryFunc.inlineCount) {
             inlineCount = true;
         } else if (part.type === AjaxFuncs.includeResponse) {
@@ -232,7 +233,7 @@ export function handleParts<TOptions extends ODataOptions>(parts: IQueryPart[]):
     }
 
     for (const p in params) {
-        if (params.hasOwnProperty(p)) {
+        if (Object.prototype.hasOwnProperty.call(params, p)) {
             queryParams.push({ key: "$" + p, value: handlePartArg(params[p]) });
         }
     }
@@ -288,6 +289,7 @@ function expToStr(exp: Expression, scopes: any[], parameters: string[]): string 
             // "c => ({ id: c.id })" expression generates "(id)" and OData does not support that
             // but, we have to use that syntax to use ObjectExpression with lambdas
             // so, we unwrap groups if they contain only one ObjectExpression
+            // eslint-disable-next-line no-case-declarations
             const groupExp = exp as GroupExpression;
             return groupExp.expressions.length === 1 && groupExp.expressions[0].type === ExpressionType.Object
                 ? expToStr(groupExp.expressions[0], scopes, parameters)

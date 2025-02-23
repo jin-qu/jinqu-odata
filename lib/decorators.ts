@@ -10,7 +10,7 @@ const metadata: TypeInfo[] = [];
 export function oDataResource(resource: string) {
 
     return (target: Ctor<unknown>) => {
-        const existing = metadata.find((m, _) => m.type === target);
+        const existing = metadata.find((m) => m.type === target);
         if (existing) {
             existing.resource = resource;
         } else {
@@ -20,6 +20,6 @@ export function oDataResource(resource: string) {
 }
 
 export function getResource(type: Ctor<unknown>) {
-    const existing = metadata.find((m, _) => m.type === type);
+    const existing = metadata.find((m) => m.type === type);
     return (existing && existing.resource) || null;
 }

@@ -20,6 +20,7 @@ export class ODataQueryProvider<TOptions extends ODataOptions, TResponse> implem
         return new ODataQuery<T, TOptions, TResponse>(this, parts);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public execute<T = any, TResult = PromiseLike<T[]>>(_parts: IQueryPart[]): TResult {
         throw new Error("Synchronous execution is not supported");
     }
