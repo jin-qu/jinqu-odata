@@ -1,13 +1,13 @@
-import { AjaxOptions, AjaxResponse, IAjaxProvider, Value } from "jinqu";
-import { oDataResource, ODataService } from "../index";
+import { AjaxResponse, IAjaxProvider, Value } from "jinqu";
+import { ODataOptions, oDataResource, ODataService } from "../index";
 
-export class MockRequestProvider implements IAjaxProvider<Response> {
-    public options: AjaxOptions;
+export class MockRequestProvider implements IAjaxProvider<Response, RequestInit & ODataOptions> {
+    public options: ODataOptions;
 
     constructor(private readonly result = null) {
     }
 
-    public ajax<T>(options: AjaxOptions): PromiseLike<Value<T> & AjaxResponse<Response>> {
+    public ajax<T>(options: ODataOptions): PromiseLike<Value<T> & AjaxResponse<Response>> {
         this.options = options;
         const response = { body: this.result } as Response;
         const result = { value: this.result, response };
@@ -55,13 +55,6 @@ export class CompanyService extends ODataService {
     public companies() {
         return this.createQuery<ICompany>("Companies");
     }
-}
-
-export function getCountries(): ICountry[] {
-    return [
-        { name: "Uganda" },
-        { name: "Nauru" },
-    ];
 }
 
 export function getCompanies(): ICompany[] {

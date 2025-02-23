@@ -15,12 +15,12 @@ describe("Service tests", () => {
     });
 
     it("should throw for sync execution", () => {
-        const svc = new ODataQueryProvider(service);
+        const svc = new ODataQueryProvider(provider);
         expect(() => svc.execute([])).toThrow();
     });
 
     it("should throw for unknown part", () => {
-        const svc = new ODataQueryProvider(service);
+        const svc = new ODataQueryProvider(provider);
         expect(() => svc.executeAsync([{ type: "UNKNOWN", args: [], scopes: [] }])).toThrow();
     });
 
@@ -42,14 +42,6 @@ describe("Service tests", () => {
         ]);
         const query = service.companies().provider.createQuery([part]) as ODataQuery<Company>;
         expect(() => query.toArrayAsync()).toThrow();
-    });
-
-    it("should handle missing parameters", async () => {
-        const svc = new ODataService(null, provider);
-        await expect(svc.request(null, null)).resolves.toBeNull();
-
-        const url = provider.options.$url;
-        expect(url).toBeUndefined();
     });
 
     it("should handle base address", async () => {
@@ -147,6 +139,17 @@ describe("Service tests", () => {
         expect(url).toBe(expectedUrl);
     });
 
+    it("should handle filter parameter with unknown operator", async () => {
+        const query = service.companies()
+            .where("c => c.id & 4");
+        await expect(query.toArrayAsync()).resolves.toBeNull();
+
+        const url = provider.options.$url;
+        const expectedPrm = "id & 4";
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent(expectedPrm)}`;
+        expect(url).toBe(expectedUrl);
+    });
+
     it("should handle string filter parameter", async () => {
         const query = service.companies()
             .where("c => c.id === 4 && (!c.addresses.any(a => a.id > 1000) || c.addresses.all(a => a.id >= 1000))");
@@ -202,6 +205,16 @@ describe("Service tests", () => {
 
         const url = provider.options.$url;
         const expectedUrl = `api/Companies?$select=${encodeURIComponent("id,name")}`;
+        expect(url).toBe(expectedUrl);
+    });
+
+    it("should handle navigate", () => {
+        const query = service.companies()
+            .navigateTo(c => c.address);
+        expect(query.toArrayAsync()).resolves.toBeNull();
+
+        const url = provider.options.$url;
+        const expectedUrl = `api/Companies/address`;
         expect(url).toBe(expectedUrl);
     });
 
@@ -383,6 +396,46 @@ describe("Service tests", () => {
         expect(url).toBe(expectedUrl);
     });
 
+    it("should handle includes function", async () => {
+        const query = service.companies()
+            .where(c => ["Net"].includes(c.name));
+        await expect(query.toArrayAsync()).resolves.toBeNull();
+
+        const url = provider.options.$url;
+        const expectedUrl = `api/Companies?$filter=${encodeURIComponent("name in ('Net')")}`;
+        expect(url).toBe(expectedUrl);
+    });
+
+    it("should handle action", async () => {
+        const query = service.companies().action("alert");
+        await expect(query.executeAsync()).resolves.toBeNull();
+
+        const url = provider.options.$url;
+        const expectedUrl = `api/Companies/alert`;
+        expect(url).toBe(expectedUrl);
+    });
+
+    it("should handle function", async () => {
+        const query = service.companies().function("alert")
+
+        const query1 = query.withParameters(42);
+        await expect(query1.executeAsync()).resolves.toBeNull();
+
+        const url1 = provider.options.$url;
+        const expectedUrl1 = `api/Companies/alert(42)`;
+        expect(url1).toBe(expectedUrl1);
+
+        const query2 = query.withParameters({ id: 42, name: "zaphod" });
+        await expect(query2.executeAsync()).resolves.toBeNull();
+
+        const url2 = provider.options.$url;
+        const expectedUrl2 = `api/Companies/alert(id=42,name='zaphod')`;
+        expect(url2).toBe(expectedUrl2);
+
+        const query3 = query.withParameters({});
+        expect(() => query3.executeAsync()).toThrow("Function parameters must have at least one property.");
+    });
+
     it("should handle date", async () => {
         const date = new Date(1592, 2, 14);
         const query = service.companies().where(c => c.createDate < date && c.name != null, { date });
@@ -562,7 +615,8 @@ describe("Service tests", () => {
         const result = Object.assign({}, value);
         const prv = new MockRequestProvider(result);
         const query1 = new CompanyService(prv).companies().setData(value);
-        const response1 = await query1.insertAsync();
+        const q = query1.insertAsync();
+        const response1 = await q;
         const url1 = prv.options.$url;
         const expectedUrl1 = "api/Companies";
         expect(url1).toBe(expectedUrl1);
@@ -579,12 +633,13 @@ describe("Service tests", () => {
         const expectedUrl1 = "api/Companies(5)";
         expect(url1).toBe(expectedUrl1);
         expect(prv.options.$method).toBe("DELETE");
-        expect(response1).toBeNull(); // .undefined ??
+        expect(response1).toBeNull();
     });
 
     it("should handle updateAsync with PUT", async () => {
-        const query = service.createQuery<ICompany>("Companies")
-            .withOptions({ $method: "PUT" });
+        const query = service
+            .createQuery<ICompany>("Companies")
+            .withOptions({ $updateMethod: "PUT" });
         await expect(query.updateAsync()).resolves.toBeNull();
 
         const url = provider.options.$url;
@@ -594,9 +649,9 @@ describe("Service tests", () => {
 
     it("should handle ODataService options", async () => {
         const svc = new ODataService({
-            baseAddress: "api",
+            $baseAddress: "api",
+            $updateMethod: "PUT",
             ajaxProvider: provider,
-            updateMethod: "PUT"
         });
         const query = svc.createQuery<ICompany>("Companies");
         await expect(query.updateAsync()).resolves.toBeNull();

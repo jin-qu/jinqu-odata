@@ -1,5 +1,5 @@
 import {
-    AjaxFuncs, AjaxOptions, Ctor, IPartArgument,
+    AjaxFuncs, Ctor, IPartArgument,
     IQueryPart, QueryFunc, QueryParameter,
 } from "jinqu";
 import {
@@ -8,6 +8,7 @@ import {
     GroupExpression, LiteralExpression, MemberExpression,
     ObjectExpression, UnaryExpression, VariableExpression,
 } from "jokenizer";
+import { ODataOptions } from "./odata-query-provider";
 
 export const ODataFuncs = {
     action: "action",
@@ -22,6 +23,8 @@ export const ODataFuncs = {
     setData: "setData",
     thenExpand: "thenExpand",
     top: "top",
+    update: "update",
+    insert: "insert",
 };
 
 const orderFuncs = [QueryFunc.orderBy, QueryFunc.orderByDescending];
@@ -50,7 +53,7 @@ interface ExpandCollection { [expand: string]: ExpandContainer; }
 
 let rootLambda: boolean;
 
-export function handleParts<TOptions extends AjaxOptions>(parts: IQueryPart[]): [QueryParameter[], TOptions[], Ctor<any>] {
+export function handleParts<TOptions extends ODataOptions>(parts: IQueryPart[]): [QueryParameter[], TOptions[], Ctor<unknown>] {
     rootLambda = true;
 
     const options: TOptions[] = [];
@@ -69,6 +72,10 @@ export function handleParts<TOptions extends AjaxOptions>(parts: IQueryPart[]): 
     let select: IQueryPart;
     let apply: IQueryPart;
     let ctor: Ctor<any>;
+    let updateMethod: string;
+    let update = false;
+    let insert = false;
+    let returnRepresentation = false;
 
     function quoteIfString(val: any): string {
         return (typeof val === "string") ? "'" + val + "'" : String(val);
@@ -76,7 +83,11 @@ export function handleParts<TOptions extends AjaxOptions>(parts: IQueryPart[]): 
 
     for (const part of parts) {
         if (part.type === AjaxFuncs.options) {
-            options.push(part.args[0].literal as TOptions);
+            const o = part.args[0].literal as TOptions;
+            options.push(o);
+            if (o.$updateMethod) {
+                updateMethod = o.$updateMethod;
+            }
         } else if (part.type === QueryFunc.cast) {
             ctor = part.args[0].literal as any;
         } else if (part.type === QueryFunc.toArray
@@ -111,6 +122,12 @@ export function handleParts<TOptions extends AjaxOptions>(parts: IQueryPart[]): 
             filters.push(part);
         } else if (otherFuncs.indexOf(part.type) !== -1) {
             params[part.type] = part.args[0];
+        } else if (part.type === ODataFuncs.update) {
+            update = true;
+            returnRepresentation = part.args[0].literal === true;
+        } else if (part.type === ODataFuncs.insert) {
+            insert = true;
+            returnRepresentation = part.args[0].literal === true;
         } else
             throw new Error(`${part.type} is not supported.`);
     }
@@ -122,9 +139,8 @@ export function handleParts<TOptions extends AjaxOptions>(parts: IQueryPart[]): 
             if (typeof argVal === "object") {
                 if (Object.keys(argVal).length > 1) {
                     keyVal = Object.keys(argVal).map((key: string) => `${key}=${quoteIfString(argVal[key])}`).join(",");
-                } else {
+                } else
                     throw new Error("Composite key must have at least two properties.");
-                }
             } else {
                 keyVal = quoteIfString(argVal);
             }
@@ -150,11 +166,10 @@ export function handleParts<TOptions extends AjaxOptions>(parts: IQueryPart[]): 
             if (typeof argVal === "object") {
                 if (Object.keys(argVal).length > 0) {
                     parVal = Object.keys(argVal).map((key: string) => `${key}=${quoteIfString(argVal[key])}`).join(",");
-                } else {
+                } else
                     throw new Error("Function parameters must have at least one property.");
-                }
             } else {
-                parVal = quoteIfString(argVal); // ??
+                parVal = quoteIfString(argVal);
             }
         }
 
@@ -236,6 +251,12 @@ export function handleParts<TOptions extends AjaxOptions>(parts: IQueryPart[]): 
         options.push({ $data: data.args[0].literal } as TOptions);
     }
 
+    if (update || insert) {
+        const o: any = returnRepresentation ? { $headers: { prefer: "return=representation" } } : {};
+        o.$method = update ? (updateMethod ?? "PATCH") : "POST";
+        options.push(o);
+    }
+
     return [queryParams, options, ctor];
 }
 
@@ -294,9 +315,8 @@ function literalToStr(exp: LiteralExpression) {
 
 function variableToStr(exp: VariableExpression, scopes: any[], parameters: string[]) {
     const name = exp.name;
-    if (parameters.indexOf(name) !== -1) {
+    if (parameters.indexOf(name) !== -1)
         return "";
-    }
 
     const scope = scopes && scopes.find(s => name in s);
     return (scope && valueToStr(scope[name])) || name;
@@ -328,17 +348,14 @@ function binaryToStr(exp: BinaryExpression, scopes: any[], parameters: string[])
 function memberToStr(exp: MemberExpression, scopes: any[], parameters: string[]) {
     const owner = expToStr(exp.owner, scopes, parameters);
 
-    if (!owner) {
+    if (!owner)
         return exp.name;
-    }
 
-    if (typeof owner === "object") {
+    if (typeof owner === "object")
         return valueToStr(owner![exp.name]);
-    }
 
-    if (exp.name === "length") {
+    if (exp.name === "length")
         return `length(${owner})`;
-    }
 
     return `${owner}/${exp.name}`;
 }
@@ -366,28 +383,23 @@ function callToStr(exp: CallExpression, scopes: any[], parameters: string[]) {
     let args: string;
     const ownerStr = expToStr(callee.owner, scopes, parameters);
 
-    if (callee.name === "count") {
+    if (callee.name === "count")
         return ownerStr ? `${ownerStr}/$count` : "$count";
-    }
 
-    if (aggregateFuncs.indexOf(callee.name) !== -1) {
+    if (aggregateFuncs.indexOf(callee.name) !== -1)
         return `${handleExp(exp.args[0], scopes)} with ${callee.name}`;
-    }
 
-    if (callee.owner.type === ExpressionType.Array && callee.name === 'includes') {
-        //return `${(exp.args[0] as VariableExpression).name} in (${ownerStr})`;
+    if (callee.owner.type === ExpressionType.Array && callee.name === 'includes')
         return `${expToStr(exp.args[0], scopes, parameters)} in (${ownerStr})`;
-    }
 
     args = exp.args.map(a => expToStr(a, scopes, parameters)).join(",");
+
     // handle Math functions
-    if (mathFuncs.indexOf(callee.name) !== -1 && ownerStr === "Math") {
+    if (mathFuncs.indexOf(callee.name) !== -1 && ownerStr === "Math")
         return `${callee.name}(${args})`;
-    }
     // any and all are the only functions which can be called on owner
-    if (callee.name === "any" || callee.name === "all") {
+    if (callee.name === "any" || callee.name === "all")
         return `${ownerStr}/${callee.name}(${args})`;
-    }
 
     // other supported functions takes owner as the first argument
     args = args ? `${ownerStr},${args}` : ownerStr;
@@ -407,17 +419,14 @@ function arrayToStr(exp: ArrayExpression, scopes: any[], parameters: string[]) {
 }
 
 function valueToStr(value: any) {
-    if (Object.prototype.toString.call(value) === "[object Date]") {
+    if (Object.prototype.toString.call(value) === "[object Date]")
         return `${value.toISOString()}`;
-    }
 
-    if (value == null) {
+    if (value == null)
         return "null";
-    }
 
-    if (typeof value === "string") {
+    if (typeof value === "string")
         return `'${value.replace(/'/g, "''")}'`;
-    }
 
     if (typeof value === "number")
         return value.toString();
@@ -431,10 +440,6 @@ function valueToStr(value: any) {
 function walkExpands(e: ExpandCollection) {
     const expStrs = [];
     for (const p in e) {
-        if (!e.hasOwnProperty(p)) {
-            continue;
-        }
-
         const exp = e[p];
         const childStr = walkExpands(exp.children);
 
