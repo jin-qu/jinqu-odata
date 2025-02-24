@@ -23,7 +23,7 @@ jinqu-odata is dependent on the [jinqu](https://github.com/jin-qu/jinqu) package
 ## Installation
 
 ```shell
-npm install jinqu-odata
+npm install @jin-qu/odata
 ```
 
 ## Usage
