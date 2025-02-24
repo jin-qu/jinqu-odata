@@ -1,4 +1,4 @@
-import { AjaxResponse, IAjaxProvider, Value } from "jinqu";
+import { AjaxResponse, IAjaxProvider, Value } from "@jin-qu/jinqu";
 import { ODataOptions, oDataResource, ODataService } from "../index";
 
 export class MockRequestProvider implements IAjaxProvider<Response, RequestInit & ODataOptions> {

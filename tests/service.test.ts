@@ -1,9 +1,12 @@
 import { expect } from "@jest/globals";
-import { PartArgument, QueryPart } from "jinqu";
-import "jinqu-array-extensions";
+import { PartArgument, QueryPart } from "@jin-qu/jinqu";
+import "@jin-qu/array-extensions";
 import { ODataQuery, ODataQueryProvider, ODataService } from "../index";
 import { ODataFuncs } from "../lib/shared";
-import { Company, CompanyService, Country, getCompanies, getCompany, ICompany, ICountry, MockRequestProvider } from "./fixture";
+import {
+    Company, CompanyService, Country, getCompanies,
+    getCompany, ICompany, ICountry, MockRequestProvider
+} from "./fixture";
 
 describe("Service tests", () => {
     const provider = new MockRequestProvider();

@@ -2,7 +2,7 @@ import { plainToInstance } from "class-transformer";
 import {
     AjaxFuncs, AjaxOptions, Ctor, IAjaxProvider, IQueryPart,
     IQueryProvider, mergeAjaxOptions, QueryFunc, QueryParameter
-} from "jinqu";
+} from "@jin-qu/jinqu";
 import { ODataQuery } from "./odata-query";
 import { handleParts, ODataFuncs } from "./shared";
 

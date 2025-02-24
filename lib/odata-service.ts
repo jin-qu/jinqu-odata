@@ -1,5 +1,5 @@
-import { Ctor, IAjaxProvider } from "jinqu";
-import { FetchProvider } from "jinqu-fetch";
+import { Ctor, IAjaxProvider } from "@jin-qu/jinqu";
+import { FetchProvider } from "@jin-qu/fetch";
 import { getResource } from "./decorators";
 import { ODataQuery } from "./odata-query";
 import { ODataOptions, ODataQueryProvider } from "./odata-query-provider";

@@ -1,9 +1,8 @@
 import {
-    AjaxFuncs, AjaxResponse, Ctor, Func1,
+    AjaxFuncs, AjaxResponse, Ctor, Func1, InlineCountInfo,
     IQueryBase, IQueryPart, IQueryProvider,
     PartArgument, Predicate, QueryPart, Result,
-} from "jinqu";
-import { InlineCountInfo } from "jinqu";
+} from "@jin-qu/jinqu";
 import { handleParts, ODataFuncs } from "./shared";
 import { ODataOptions } from "./odata-query-provider";
 

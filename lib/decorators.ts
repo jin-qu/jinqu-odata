@@ -1,4 +1,4 @@
-import { Ctor } from "jinqu";
+import { Ctor } from "@jin-qu/jinqu";
 
 interface TypeInfo {
     type: Ctor<unknown>;

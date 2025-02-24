@@ -1,7 +1,7 @@
 import {
     AjaxFuncs, Ctor, IPartArgument,
     IQueryPart, QueryFunc, QueryParameter,
-} from "jinqu";
+} from "@jin-qu/jinqu";
 import {
     ArrayExpression, BinaryExpression, CallExpression,
     Expression, ExpressionType, FuncExpression,
